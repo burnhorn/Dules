@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.domain.interfaces import ScheduleRepository
 from app.domain.schemas.schedule import ScheduleCreate
-from app.infrastructure.db.models.schedule import Schedule
+from app.infrastructure.db.models import Schedule
 
 class SQLAlchemyScheduleRepository(ScheduleRepository):
     def __init__(self, db: AsyncSession):

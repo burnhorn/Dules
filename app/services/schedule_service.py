@@ -10,7 +10,7 @@ class ScheduleService:
 
     async def create_schedule(self, data: ScheduleCreate, user_id: UUID) -> ScheduleResponse:
         # 비즈니스 로직 (중복 일정 체크, AI 조언 요청)
-        await self.check_conflict(data)
+        # await self.check_constraints(data)
 
         # 저장 요청
         created_schedule = await self.repo.create(data, user_id)

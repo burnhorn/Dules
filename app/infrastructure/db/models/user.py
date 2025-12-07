@@ -17,11 +17,11 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # 기본 정보
-    eamil = Column(String(255), unique=True, nullable=False, index=True) # 검색을 위한 index 추가
+    email = Column(String(255), unique=True, nullable=False, index=True) # 검색을 위한 index 추가
     name = Column(String(100), nullable=False)
 
     # 객체 일관성: 명확한 이름 사용(평문 저장 금지 암시)
-    hased_password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
 
     # 상태 관리
     is_active = Column(Boolean, default=True)
