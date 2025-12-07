@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.domain.interfaces import ScheduleRepository
 from app.domain.schemas.schedule import ScheduleCreate
 from app.infrastructure.db.models import Schedule
+from app.infrastructure.db.models.schedule import ScheduleHistory
 
 class SQLAlchemyScheduleRepository(ScheduleRepository):
     def __init__(self, db: AsyncSession):
@@ -39,3 +40,20 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
         )
         result = await self.db.execute(query)
         return result.scalars().all()
+    
+    async def create_history(self, history: ScheduleHistory):
+        self.db.add(history) # Commit을 Service에서 처리
+
+    async def update(self, schedule: Schedule) -> Schedule:
+        """
+        - 변경사항 감지 및 반영 준비
+        """
+        self.db.add(schedule) # Commit은 Service에서 처리
+        return schedule
+    
+    # 트랜잭션 마무리를 위한 헬퍼
+    async def commit(self):
+        await self.db.commit()
+
+    async def refresh(self, instance):
+        await self.db.refresh(instance)

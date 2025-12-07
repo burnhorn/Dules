@@ -56,3 +56,21 @@ class ScheduleResponse(ScheduleBase):
 
     class Config:
         from_attributes = True
+
+
+# 수정 스키마
+class ScheduleUpdate(BaseModel):
+    """
+    일정 수정 요청 스키마
+    - 모든 필드는 Optional로 설정하여 변경할 값만 보냅니다.
+    """
+    title: Optional[str] = Field(None, min_length=1, max_length=100, description="일정 제목")
+    description: Optional[str] = Field(None, description="상세 내용")
+    type: Optional[ScheduleType] = None
+
+    # Event용 필드
+    start_at: Optional[datetime] = None
+    end_at: Optional[datetime] = None
+
+    # Task용 필드
+    deadline: Optional[datetime] = None
