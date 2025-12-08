@@ -33,3 +33,18 @@ class ScheduleRepository(Protocol):
     async def refresh(self, instance: Any) -> None:
         ...
 
+class VectorRepository(Protocol):
+    """
+    텍스트 데이터를 벡터화하여 저장하고 검색하는 인터페이스
+    """
+    async def save(self, text: str, user_id: UUID, metadata: dict = None) -> None:
+        """텍스트를 임베딩하여 저장 (user_id를 사용하여 본인의 것만 저장)"""
+        ...
+
+    async def search(self, query: str, user_id: UUID, limit: int = 3) -> List[str]:
+        """유사한 텍스트 검색 (user_id를 사용하여 본인의 것만 검색)"""
+        ...
+
+    async def delete(self, doc_id: str) -> None:
+        """특정 문서 삭제 (업데이트 시 필요)"""
+        ...

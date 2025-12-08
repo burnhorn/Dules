@@ -1,6 +1,6 @@
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, BackgroundTasks
 
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.services.schedule_service import ScheduleService
@@ -16,6 +16,7 @@ router = APIRouter()
 )
 async def create_schedule(
     schedule_in: ScheduleCreate,
+    background_tasks: BackgroundTasks,
     service: ScheduleService = Depends(get_schedule_service),
     user_id: UUID = Depends(get_current_user_id)
 ):
@@ -29,7 +30,7 @@ async def create_schedule(
     :param user_id: 현재 로그인한 유저 ID
     :type user_id: UUID
     """
-    return await service.create_schedule(schedule_in, user_id)
+    return await service.create_schedule(schedule_in, user_id, background_tasks)
 
 
 @router.get(
@@ -60,6 +61,7 @@ async def read_schedules(
 async def update_schedule(
     schedule_id: UUID,
     schedule_in: ScheduleUpdate,
+    background_tasks: BackgroundTasks,
     service: ScheduleService = Depends(get_schedule_service),
     user_id: UUID = Depends(get_current_user_id)
 ):
@@ -76,4 +78,24 @@ async def update_schedule(
     :param user_id: 현재 로그인한 유저 ID
     :type user_id: UUID
     """
-    return await service.update_schedule(schedule_id, schedule_in, user_id)
+    return await service.update_schedule(schedule_id, schedule_in, user_id, background_tasks)
+
+@router.get("/search", summary="자연어 일정 검색 (Vector Search)")
+async def search_schedules(
+    query: str,
+    service: ScheduleService = Depends(get_schedule_service),
+    user_id: UUID = Depends(get_current_user_id)
+):
+    """
+    'A 프로젝트는 언제까지야?"와 같이 자연어로 질문하면
+    의미상 유사한 과거 일정을 벡터 DB에서 찾아 반환합니다.
+
+    :param query: 자연어 질문
+    :type query: str
+    :param service: 비즈니스 로직
+    :type service: ScheduleService
+    :param user_id: 현재 로그인한 유저 ID
+    :type user_id: UUID
+    """
+
+    return await service.search_schedules(query, user_id)
