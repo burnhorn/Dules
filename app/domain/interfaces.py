@@ -46,5 +46,17 @@ class VectorRepository(Protocol):
         ...
 
     async def delete(self, doc_id: str) -> None:
+
         """특정 문서 삭제 (업데이트 시 필요)"""
         ...
+
+class AIBrain(Protocol):
+    """
+    LLM과 통신을 담당하는 인터페이스
+    """
+    async def ask(self, question: str, context: str) -> str:
+        """
+        주어진 맥락(context)를 바탕으로 질문(question)에 답변합니다.
+        """
+        ...
+        

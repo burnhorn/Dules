@@ -7,6 +7,9 @@ from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
 from app.services.schedule_service import ScheduleService, VectorRepository
 from app.infrastructure.ai.vector_repository import PGVectorRepository 
+from app.domain.interfaces import AIBrain
+from app.infrastructure.ai.brain import FakeBrain
+from app.services.chat_service import ChatService
 
 # 전역 변수로 인스턴스 캐싱
 _vector_repo_instance = None
@@ -52,3 +55,12 @@ def get_schedule_service(
         vector_repo: VectorRepository = Depends(get_vector_repository)
 ) -> ScheduleService:
     return ScheduleService(repo, vector_repo)
+
+def get_ai_brain() -> AIBrain:
+    return FakeBrain()
+
+def get_chat_service(
+        vector_repo: VectorRepository = Depends(get_vector_repository),
+        brain: AIBrain = Depends(get_ai_brain)
+) -> ChatService:
+    return ChatService(vector_repo, brain)
