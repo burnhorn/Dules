@@ -7,6 +7,7 @@ import pytz
 from app.domain.interfaces import ScheduleRepository, VectorRepository, ImageProcessor
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.infrastructure.db.models.schedule import ScheduleHistory
+from app.core.exceptions import ResourceNotFoundException, KairosException
 
 class ScheduleService:
     """
@@ -53,11 +54,15 @@ class ScheduleService:
         # 기존 일정 조회 (없으면 404)
         schedule = await self.repo.get_by_id(schedule_id)
         if not schedule:
-            raise HTTPException(status_code=404, detail="일정을 찾을 수 없습니다.")
+            raise ResourceNotFoundException(resource="일정")
         
         # 보안요소: 내 일정이 맞는지 확인
         if schedule.user_id != user_id:
-            raise HTTPException(status_code=403, detail="수정 권한이 없습니다.")
+            raise KairosException(
+                message="수정 권한이 없습니다.",
+                code="PERMISSION_DENIED",
+                status_code=403
+            )
         
         # 이력(history) 기록 (변경 전 상태 스냅샷)
         history = ScheduleHistory(
