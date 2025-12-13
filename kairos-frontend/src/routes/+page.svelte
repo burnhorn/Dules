@@ -3,12 +3,14 @@
     import { scheduleApi } from "$lib/api";
     import type { Schedule } from "$lib/types";
 
+    import ScheduleForm from "$lib/components/ScheduleForm.svelte";
     import ChatInterface from "$lib/components/ChatInterface.svelte";
     import ImageUpload from "$lib/components/ImageUpload.svelte";
 
-    let schedules: Schedule[] = [];
-    let loading = true;
-    let error = '';
+    let schedules = $state<Schedule[]>([]);
+    let loading = $state(true);
+    let error = $state('');
+    let isFormOpen = $state(false);
 
     // 데이터 로딩 함수
     async function loadSchedules() {
@@ -30,7 +32,17 @@
 </script>
 
 <main class="container mx-auto p-4 max-w-2xl pb-24">
-    <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Kairos Scheduler</h1>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Kairos Scheduler</h1>
+
+        <!-- 수동 추가 버튼-->
+        <button
+            onclick={() => isFormOpen = true}
+            class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 font-semibold"
+        >
+        ➕ 직접 추가
+        </button>
+    </div>
 
     <ImageUpload onuploaded={loadSchedules} />
 
@@ -68,6 +80,14 @@
             {/if}
         </div>
     {/if}
-
+    
+    <!-- 모달: 조건부 렌더링-->
+    {#if isFormOpen}
+        <ScheduleForm
+            onclose={() => isFormOpen = false}
+            onsuccess={loadSchedules}
+        />
+    {/if}
+    
     <ChatInterface />
 </main>
