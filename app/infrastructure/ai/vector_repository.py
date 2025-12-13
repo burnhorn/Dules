@@ -2,7 +2,7 @@ import asyncio
 from typing import List
 from uuid import UUID
 import uuid
-
+from tenacity import retry, stop_after_attempt, wait_exponential
 from langchain_postgres import PGVector
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
@@ -37,6 +37,11 @@ class PGVectorRepository(VectorRepository):
         )
         print("PGVector Repository Ready!")
 
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True
+    )
     async def save(self, text: str, user_id: UUID, metadata: dict = None) -> None:
         if metadata is None: metadata = {}
         metadata["user_id"] = str(user_id)

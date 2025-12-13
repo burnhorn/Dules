@@ -1,6 +1,7 @@
 import json
 import base64
 from datetime import datetime
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.messages import HumanMessage
 
@@ -18,7 +19,11 @@ class GeminiImageProcessor(ImageProcessor):
         )
 
         print("[Vision] GeminiImageProcessor 초기화 완료")
-
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
     async def extract_schedule(self, image_bytes: str, mime_type: str, reference_date: datetime) -> ScheduleCreate:
         print("[Vision] 이미지 분석 시작...")
 

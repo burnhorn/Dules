@@ -1,4 +1,5 @@
 import asyncio
+from tenacity import retry, stop_after_attempt, wait_exponential
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -51,7 +52,12 @@ class GeminiBrain(AIBrain):
 
         self.chain = self.prompt | self.llm | StrOutputParser()
         print("[Brain] GeminiBrain 준비 완료!")
-
+    
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        reraise=True
+    )
     async def ask(self, question: str, context: str) -> str:
         try:
             response = await self.chain.ainvoke({
