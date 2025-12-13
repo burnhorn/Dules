@@ -1,6 +1,6 @@
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, status, BackgroundTasks
+from fastapi import APIRouter, Depends, status, BackgroundTasks, UploadFile, File
 
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.services.schedule_service import ScheduleService
@@ -99,3 +99,22 @@ async def search_schedules(
     """
 
     return await service.search_schedules(query, user_id)
+
+@router.post("/image", response_model=ScheduleResponse, summary="이미지로 일정 등록 (OCR)")
+async def create_schedule_by_image(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    servcie: ScheduleService = Depends(get_schedule_service),
+    user_id: UUID = Depends(get_current_user_id)
+):
+    """
+    이미지 파일(청첩장, 시간표 등)을 업로드하면 내용을 분석하여 일정을 자동 등록합니다.
+    """
+    contents = await file.read()
+
+    return await servcie.create_schedule_from_image(
+        image_bytes=contents,
+        mime_type=file.content_type,
+        user_id=user_id,
+        background_tasks=background_tasks
+    )

@@ -1,8 +1,10 @@
 from fastapi import BackgroundTasks, HTTPException
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime
+import pytz
 
-from app.domain.interfaces import ScheduleRepository, VectorRepository
+from app.domain.interfaces import ScheduleRepository, VectorRepository, ImageProcessor
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.infrastructure.db.models.schedule import ScheduleHistory
 
@@ -10,9 +12,10 @@ class ScheduleService:
     """
     일정 로직의 순서와 규칙(트랜잭션)을 보장
     """
-    def __init__(self, repo: ScheduleRepository, vector_repo: VectorRepository):
+    def __init__(self, repo: ScheduleRepository, vector_repo: VectorRepository, image_processor: ImageProcessor):
         self.repo = repo
         self.vector_repo = vector_repo
+        self.image_processor = image_processor
 
     async def create_schedule(self,
                               data: ScheduleCreate,
@@ -98,3 +101,21 @@ class ScheduleService:
             return ["관련된 과거 일정을 찾을 수 없습니다."]
         
         return results
+    
+    async def create_schedule_from_image(
+            self,
+            image_bytes: bytes,
+            mime_type: str,
+            user_id: UUID,
+            background_tasks: BackgroundTasks
+    ) -> ScheduleResponse:
+        
+        kst = pytz.timezone("Asia/Seoul")
+        now_kst = datetime.now(kst)
+
+        schedule_data = await self.image_processor.extract_schedule(
+            image_bytes, mime_type, now_kst
+            )
+        
+        # DRY 원칙: 기존의 메서드 활용하여 DB 저장
+        return await self.create_schedule(schedule_data, user_id, background_tasks)

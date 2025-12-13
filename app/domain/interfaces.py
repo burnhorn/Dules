@@ -59,4 +59,10 @@ class AIBrain(Protocol):
         주어진 맥락(context)를 바탕으로 질문(question)에 답변합니다.
         """
         ...
-        
+
+class ImageProcessor(Protocol):
+    """
+    이미지 파일을 분석하여 일정 정보(ScheduleCreate)를 추출하는 인터페이스
+    """
+    async def extract_schedule(self, image_bytes: bytes, main_type: str, reference_data: datetime) -> ScheduleCreate:
+        ...

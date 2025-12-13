@@ -6,9 +6,10 @@ from fastapi import Depends
 from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
 from app.services.schedule_service import ScheduleService, VectorRepository
-from app.infrastructure.ai.vector_repository import PGVectorRepository 
-from app.domain.interfaces import AIBrain
+from app.infrastructure.ai.vector_repository import PGVectorRepository
+from app.domain.interfaces import AIBrain, ImageProcessor
 from app.infrastructure.ai.brain import FakeBrain, GeminiBrain
+from app.infrastructure.ai.image_processor import GeminiImageProcessor
 from app.services.chat_service import ChatService
 
 # 전역 변수로 인스턴스 캐싱
@@ -65,3 +66,13 @@ def get_chat_service(
         brain: AIBrain = Depends(get_ai_brain)
 ) -> ChatService:
     return ChatService(vector_repo, brain)
+
+def get_image_processor() -> ImageProcessor:
+    return GeminiImageProcessor()
+
+def get_schedule_service(
+        repo: SQLAlchemyScheduleRepository = Depends(get_schedule_repository),
+        vector_repo: VectorRepository = Depends(get_vector_repository),
+        image_processor: ImageProcessor = Depends(get_image_processor)
+) -> ScheduleService:
+    return ScheduleService(repo, vector_repo, image_processor)
