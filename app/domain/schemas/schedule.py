@@ -41,8 +41,9 @@ class ScheduleCreate(ScheduleBase):
                 raise ValueError("종료 시간은 시작 시간보다 뒤여야 합니다.")
             
         if self.type == ScheduleType.TASK:
-            if not self.start_at:
-                raise ValueError("할 일(TASK)는 시작 시간이 필수입니다.")
+            # if not self.deadline:
+            #     raise ValueError("할 일(TASK)은 마감일이 필수입니다.")
+            pass
             
         return self
     

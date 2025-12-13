@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -55,13 +56,18 @@ def create_app() -> FastAPI:
     # Pydantic 유효성 검사 실패 처리 (422)
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        errors = exc.errors()
+        for error in errors:
+            if 'ctx' in error:
+                error['ctx'] = {k: str(v) for k, v in error['ctx'].items()}
+
         return JSONResponse(
             status_code=422,
             content={
                 "success": False,
                 "code": "VALIDATION_ERROR",
                 "message": "입력 값이 올바르지 않습니다.",
-                "details": exc.errors()
+                "details": jsonable_encoder(errors)
             }
         )
     
