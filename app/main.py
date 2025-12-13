@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -14,6 +15,18 @@ def create_app() -> FastAPI:
         version="0.3.0"
     )
     
+    origins = [
+        "http://localhost:5173",
+    ]
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     # 비즈니스 로직 커스텀 예외 처리 
     @app.exception_handler(KairosException)
     async def kairos_exception_handler(request: Request, exc: KairosException):
