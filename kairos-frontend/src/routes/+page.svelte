@@ -3,11 +3,16 @@
     import { scheduleApi } from "$lib/api";
     import type { Schedule } from "$lib/types";
 
+    import ChatInterface from "$lib/components/ChatInterface.svelte";
+    import ImageUpload from "$lib/components/ImageUpload.svelte";
+
     let schedules: Schedule[] = [];
     let loading = true;
     let error = '';
 
-    onMount(async () => {
+    // 데이터 로딩 함수
+    async function loadSchedules() {
+        loading = true;
         try {
             schedules = await scheduleApi.getAll();
         } catch (e) {
@@ -16,11 +21,18 @@
         } finally {
             loading = false;
         }
+    }
+
+    onMount(() => {
+        loadSchedules();
     })
+
 </script>
 
-<main class="container mx-auto p-4 max-w-2xl">
+<main class="container mx-auto p-4 max-w-2xl pb-24">
     <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Kairos Scheduler</h1>
+
+    <ImageUpload onuploaded={loadSchedules} />
 
     {#if loading}
         <div class="text-center p-4">로딩 중...</div>
@@ -56,4 +68,6 @@
             {/if}
         </div>
     {/if}
+
+    <ChatInterface />
 </main>
