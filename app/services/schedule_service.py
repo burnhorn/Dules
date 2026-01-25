@@ -23,8 +23,14 @@ class ScheduleService:
                               user_id: UUID,
                               background_taks: BackgroundTasks
                               ) -> ScheduleResponse:
-        # DB 저장 요청 (빠름)
+        # DB 객체 생성 및 세션 등록 (Insert 준비)
         created_schedule = await self.repo.create(data, user_id)
+
+        # 트랜젝션 확정 / (다른 로직 수행 가능)
+        await self.repo.commt()
+
+        # 갱신된 DB 값 가져오기
+        await self.repo.refresh(created_schedule)
 
         # 백터 DB 저장 (느림)
         text_to_embed = f"일정: {created_schedule.title}\n내용: {created_schedule.description or '없음'}"

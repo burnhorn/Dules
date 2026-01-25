@@ -3,11 +3,12 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
+from app.services.schedule_service import ScheduleService 
+from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository
+
 from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
-from app.services.schedule_service import ScheduleService, VectorRepository
 from app.infrastructure.ai.vector_repository import PGVectorRepository
-from app.domain.interfaces import AIBrain, ImageProcessor
 from app.infrastructure.ai.brain import FakeBrain, GeminiBrain
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
 from app.services.chat_service import ChatService

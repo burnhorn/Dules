@@ -19,6 +19,7 @@ class GeminiImageProcessor(ImageProcessor):
         )
 
         print("[Vision] GeminiImageProcessor 초기화 완료")
+    
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -48,7 +49,7 @@ class GeminiImageProcessor(ImageProcessor):
                    - 상대적 시간(내일, 다음주, 오늘 오후 등)은 
                      현재 시각({current_time_str} - 한국 시간 기준)을 기준으로 절대 시간으로 계산해.
                 """},
-                {"type": "image_url", "image_url": image_url}
+                {"type": "image_url", "image_url": image_url, "current_time_str": current_time_str}
             ]
         )
 
