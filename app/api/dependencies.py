@@ -1,7 +1,14 @@
 from typing import AsyncGenerator
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from uuid import UUID
+
+from app.core.config import settings
+from app.domain.schemas.token import TokenData
+from app.core.exceptions import CredentialsException
 
 from app.services.schedule_service import ScheduleService 
 from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository
@@ -12,6 +19,10 @@ from app.infrastructure.ai.vector_repository import PGVectorRepository
 from app.infrastructure.ai.brain import FakeBrain, GeminiBrain
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
 from app.services.chat_service import ChatService
+from app.services.auth_service import AuthService
+
+#OAuth2 스키마 및 로그인 처리 API 주소
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 # 전역 변수로 인스턴스 캐싱
 _vector_repo_instance = None
@@ -29,15 +40,27 @@ def get_schedule_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemySch
 # [임시] 개발용 Mock 유저 ID
 TEST_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
-def get_current_user_id() -> UUID:
+def get_auth_servcie() -> AuthService:
+    return AuthService()
+
+def get_current_user_id(token: str = Depends(oauth2_schema)) -> UUID:
     """
-    JWT 토큰 파싱 로직으로 대체되기 전
-    테스트용으로 고정된 ID를 반환합니다.
+    HTTP 요청 헤더(Authorization: Bearer <Token>)에서 토큰을 꺼내 검증하고
+    그 안에 들어 있는 user_id를 반환합니다.
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id_str: str = payload.get("sub")
+
+        if user_id_str is None:
+            raise CredentialsException()
+
+        token_data = TokenData(user_id=user_id_str)
     
-    :return: user_id
-    :rtype: UUID
-    """
-    return TEST_USER_ID
+    except JWTError:
+        raise ConnectionError()
+
+    return UUID(token_data.user_id)
 
 # Repository 주입 (Session 불필요)
 def get_vector_repository() -> PGVectorRepository:
