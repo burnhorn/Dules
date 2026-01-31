@@ -11,15 +11,17 @@ from app.domain.schemas.token import TokenData
 from app.core.exceptions import CredentialsException
 
 from app.services.schedule_service import ScheduleService 
-from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository
+from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository
 
 from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
+from app.infrastructure.db.repositories.user import SQLAlchemyUserRepository
 from app.infrastructure.ai.vector_repository import PGVectorRepository
 from app.infrastructure.ai.brain import FakeBrain, GeminiBrain
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
 from app.services.chat_service import ChatService
 from app.services.auth_service import AuthService
+from app.services.user_service import UserService
 
 #OAuth2 스키마 및 로그인 처리 API 주소
 oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -36,6 +38,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 # Repository 주입 (Session 필요)
 def get_schedule_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemyScheduleRepository:
     return SQLAlchemyScheduleRepository(db)
+
+def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
+    return SQLAlchemyUserRepository(db) # SQLAchemy 구현체 반환
+
+def get_user_service(
+        repo: UserRepository = Depends(get_user_repository)
+) -> UserService:
+    return UserService(repo)
+
 
 # [임시] 개발용 Mock 유저 ID
 TEST_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
