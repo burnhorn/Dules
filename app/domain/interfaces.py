@@ -90,3 +90,28 @@ class UserRepository(Protocol):
     async def refresh(self, instance: Any) -> None:
         ...
     
+class TokenRepository(Protocol):
+    """
+    인증 토큰(JWT)의 상태를 관리하는 저장소
+    (Redis 구현체 교체용)
+    """
+    async def add_to_blacklist(self, token:str, expries_in: int) -> None:
+        """
+        토큰을 블랙리스트에 추가합니다.
+        :param token: 차단할 토큰 문자열
+        :param expires_in: 토큰의 남은 초(초과 시 자동 삭제)
+        """
+        ...
+
+    async def is_blacklisted(self, token: str) -> bool:
+        """
+        토큰이 블랙리스트에 있는지 확인합니다.
+        """
+        ...
+
+    async def close(self) -> None:
+        """
+        Redis 종료
+        """
+        ...
+

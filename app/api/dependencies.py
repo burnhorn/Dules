@@ -11,7 +11,7 @@ from app.domain.schemas.token import TokenData
 from app.core.exceptions import CredentialsException
 
 from app.services.schedule_service import ScheduleService 
-from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository
+from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository, TokenRepository
 
 from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
@@ -19,6 +19,9 @@ from app.infrastructure.db.repositories.user import SQLAlchemyUserRepository
 from app.infrastructure.ai.vector_repository import PGVectorRepository
 from app.infrastructure.ai.brain import FakeBrain, GeminiBrain
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
+
+from app.infrastructure.redis.token_repository import RedisTokenRepository
+
 from app.services.chat_service import ChatService
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
@@ -28,6 +31,7 @@ oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 # 전역 변수로 인스턴스 캐싱
 _vector_repo_instance = None
+_token_repo_instance = None
 
 # `ScheduleService`를 만들려면 `repo`가 필요하고 `repo`를 만들려면 `db`가 필요하므로 순서대로 조립하여 완성품 만듭니다.
 # DB 세션 생성
@@ -47,18 +51,27 @@ def get_user_service(
 ) -> UserService:
     return UserService(repo)
 
+def get_toekn_repository() -> TokenRepository:
+    global _token_repo_instance
+    if _token_repo_instance is None:
+        _token_repo_instance = RedisTokenRepository()
+    return _token_repo_instance
 
 # [임시] 개발용 Mock 유저 ID
 TEST_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
-def get_auth_servcie() -> AuthService:
-    return AuthService()
+def get_auth_servcie(token_repo: TokenRepository = Depends(get_toekn_repository)) -> AuthService:
+    return AuthService(token_repo)
 
-def get_current_user_id(token: str = Depends(oauth2_schema)) -> UUID:
+async def get_current_user_id(token: str = Depends(oauth2_schema),
+                        token_repo: TokenRepository = Depends(get_toekn_repository)) -> UUID:
     """
     HTTP 요청 헤더(Authorization: Bearer <Token>)에서 토큰을 꺼내 검증하고
     그 안에 들어 있는 user_id를 반환합니다.
     """
+    if await token_repo.is_blacklisted(token):
+        raise CredentialsException()
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str: str = payload.get("sub")

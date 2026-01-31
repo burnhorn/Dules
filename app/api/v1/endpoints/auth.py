@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordRequestForm # form-data 형식
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db, get_auth_servcie, get_user_service
+from app.api.dependencies import get_db, get_auth_servcie, get_user_service, oauth2_schema
 
 from app.domain.schemas.token import Token
 from app.domain.schemas.user import UserCreate, UserResponse
 
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
-
 
 router = APIRouter()
 
@@ -33,3 +32,14 @@ async def register_user(
     새로운 사용자 등록(user_in: email, password, name)
     """
     return await service.create_user(user_in)
+
+@router.post("/logout", summary="로그아웃")
+async def logout(
+    token: str = Depends(oauth2_schema),
+    auth_service: AuthService = Depends(get_auth_servcie)
+):
+    """
+    현재 사용 중인 엑세스 토큰을 만료 시킵니다.
+    """
+    await auth_service.logout(token)
+    return {"message": "로그아웃 되었습니다."}
