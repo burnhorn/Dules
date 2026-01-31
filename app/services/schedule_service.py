@@ -27,7 +27,7 @@ class ScheduleService:
         created_schedule = await self.repo.create(data, user_id)
 
         # 트랜젝션 확정 / (다른 로직 수행 가능)
-        await self.repo.commt()
+        await self.repo.commit()
 
         # 갱신된 DB 값 가져오기
         await self.repo.refresh(created_schedule)

@@ -20,8 +20,8 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
             user_id=user_id
         )
         self.db.add(db_schedule)
-        await self.db.commit()
-        await self.db.refresh(db_schedule)
+        # await self.db.commit()
+        # await self.db.refresh(db_schedule)
         return db_schedule
     
     async def get_by_id(self, schedule_id: UUID) -> Optional[Schedule]:
