@@ -3,6 +3,10 @@
     import { scheduleApi } from "$lib/api";
     import type { Schedule } from "$lib/types";
 
+    import { auth, logout } from "$lib/stores/auth";
+    import { goto } from "$app/navigation";
+    import { authApi } from "$lib/api";
+
     import ScheduleForm from "$lib/components/ScheduleForm.svelte";
     import ChatInterface from "$lib/components/ChatInterface.svelte";
     import ImageUpload from "$lib/components/ImageUpload.svelte";
@@ -26,14 +30,38 @@
     }
 
     onMount(() => {
+        if (!$auth.isAuthenticated) {
+            goto('/login');
+        }
         loadSchedules();
     })
+
+    async function handleLogout() {
+        try {
+            await authApi.logout(); // Redis에 블랙리스트 등록
+        } catch (e) {
+            console.error("로그아웃 요청 실패" , e)
+        } finally {
+            logout(); // 클라이언트 스토어 비우기
+            goto('/login');
+        }
+    }
 
 </script>
 
 <main class="container mx-auto p-4 max-w-2xl pb-24">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Kairos Scheduler</h1>
+        
+        <!-- 로그아웃 버튼-->
+        <div class="flex gap-2">
+            <button 
+                onclick={handleLogout}
+                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold text-sm"
+            >
+            로그아웃
+            </button>
+        </div>
 
         <!-- 수동 추가 버튼-->
         <button

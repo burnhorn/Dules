@@ -1,6 +1,8 @@
 import axios from "axios";
+import { get } from 'svelte/store';
+import { auth } from '$lib/stores/auth';
 import type { Schedule, ScheduleCreate, ChatResponse} from '$lib/types';
-import { form } from "$app/server";
+
 
 // 설정 중앙 관리용
 const client = axios.create({
@@ -9,6 +11,16 @@ const client = axios.create({
         'Content-Type': 'application/json'
     },
 })
+
+// Request Intercepter
+client.interceptors.request.use((config) => {
+    const state = get(auth);
+
+    if (state.token) {
+        config.headers.Authorization = `Bearer ${state.token}`;
+    }
+    return config;
+});
 
 // [임시] 개발용 Mock 유저 ID
 const TEST_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -54,4 +66,22 @@ export const chatApi = {
         return response.data;
     }
 }
+
+export const authApi = {
+    login: async (formData: FormData) => {
+        const response = await client.post('/auth/login', formData, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        return response.data;
+    },
+
+    signup: async (data: any) => {
+        const response = await client.post('/auth/signup', data);
+        return response.data;
+    },
+
+    logout: async () => {
+        await client.post('/auth/logout');
+    }
+};
 
