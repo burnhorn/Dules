@@ -115,3 +115,20 @@ class TokenRepository(Protocol):
         """
         ...
 
+    async def save_refresh_token(self, token:str, user_id: UUID, expires_in: int) -> None:
+        """
+        Refresh Token 저장
+        """
+        ...
+    
+    async def get_refresh_token_user_id(self, token: str) -> Optional[str]:
+        """
+        Refresh Token 검증(존재 여부 및 소유자 확인)
+        """
+        ...
+
+    async def delete_refresh_token(self, token: str) -> None:
+        """
+        Refresh Token 삭제 (로그아웃용)
+        """
+        ...
