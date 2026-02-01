@@ -29,7 +29,8 @@ class AuthService:
         return user
     
     async def create_tokens_for_user(self, user: User) -> Token:
-        access_token = create_access_token(subject=user.id)
+        access_token = create_access_token(subject=user.id,
+                                           role=user.role.value)
         refresh_token = create_refresh_token(subject=user.id)
 
         # Redis에 만료시간(초) 저장

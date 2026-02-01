@@ -8,7 +8,8 @@ from uuid import UUID
 
 from app.core.config import settings
 from app.domain.schemas.token import TokenData
-from app.core.exceptions import CredentialsException
+from app.domain.schemas.user import UserRole
+from app.core.exceptions import CredentialsException, KairosException
 
 from app.services.schedule_service import ScheduleService 
 from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository, TokenRepository
@@ -124,3 +125,30 @@ def get_schedule_service(
         image_processor: ImageProcessor = Depends(get_image_processor)
 ) -> ScheduleService:
     return ScheduleService(repo, vector_repo, image_processor)
+
+class RoleChecker:
+    def __init__(self, allowed_roles: list[UserRole]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, token: str = Depends(oauth2_schema)):
+        """
+        토큰 안에 있는 role이 허용된 목록에 있는지 확인
+        """
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            role_str = payload.get("role")
+
+            if role_str is None:
+                raise CredentialsException()
+            
+            if role_str not in [r.value for r in self.allowed_roles]:
+                raise KairosException(
+                    message="권한이 부족합니다.",
+                    code="PERMISSION-DENIED",
+                    status_code=403
+                )
+        except JWTError:
+            raise CredentialsException()
+            
+# 관리자용 의존성 인스턴스
+allowed_roles_only = RoleChecker([UserRole.ADMIN])

@@ -6,7 +6,7 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def create_access_token(subject: Union[str, Any], expires_delta: timedelta=None) -> str:
+def create_access_token(subject: Union[str, Any], role: str = "USER", expires_delta: timedelta=None) -> str:
     """
     JWT Access Token 생성
     :param subject: 토큰에 담을 식별자
@@ -16,7 +16,7 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta=None)
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {"exp": expire, "sub": str(subject), "role": role}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 

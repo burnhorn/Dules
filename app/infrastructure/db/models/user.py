@@ -1,10 +1,11 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, Boolean
+from sqlalchemy import Column, String, DateTime, Boolean, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from app.infrastructure.db.base import Base
+from app.domain.schemas.user import UserRole
 
 class User(Base):
     """
@@ -16,6 +17,9 @@ class User(Base):
     # 식별자
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
+    # 역할 정보
+    role = Column(SQLEnum(UserRole), default=UserRole.USER, nullable=False)
+
     # 기본 정보
     email = Column(String(255), unique=True, nullable=False, index=True) # 검색을 위한 index 추가
     name = Column(String(100), nullable=False)
@@ -25,7 +29,6 @@ class User(Base):
 
     # 상태 관리
     is_active = Column(Boolean, default=True)
-    is_superuser = Column(Boolean, default=False)
 
     # 메타 데이터
     created_at = Column(DateTime(timezone=True), server_default=func.now())

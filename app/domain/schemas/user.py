@@ -1,7 +1,13 @@
+from enum import Enum
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+
+# 유저 역할 부여용
+class UserRole(str, Enum):
+    USER = "USER"
+    ADMIN = "ADMIN"
 
 # 공통 속성
 class UserBase(BaseModel):
@@ -19,8 +25,10 @@ class UserInDB(UserBase):
 # 클라이언트 응답용 (비밀번호 미포함)
 class UserResponse(UserBase):
     id: UUID
+    role: UserRole
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
     class Config:
         from_attributes = True # ORM -> Pydantic 변환 허용
