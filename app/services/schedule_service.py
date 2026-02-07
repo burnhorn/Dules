@@ -8,6 +8,7 @@ from app.domain.interfaces import ScheduleRepository, VectorRepository, ImagePro
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.infrastructure.db.models.schedule import ScheduleHistory
 from app.core.exceptions import ResourceNotFoundException, KairosException
+from app.worker import task_save_vector
 
 class ScheduleService:
     """
@@ -32,14 +33,13 @@ class ScheduleService:
         # 갱신된 DB 값 가져오기
         await self.repo.refresh(created_schedule)
 
-        # 백터 DB 저장 (느림)
+        # 백터 DB 저장
         text_to_embed = f"일정: {created_schedule.title}\n내용: {created_schedule.description or '없음'}"
 
-        background_taks.add_task(
-            self.vector_repo.save,
+        task_save_vector.delay(
             text=text_to_embed,
-            user_id=user_id,
-            metadata={"schedule_id": str(created_schedule.id)}
+            user_id=str(user_id),
+            schedule_id=str(created_schedule.id)
         )
         
         # 응답 반환 (ORM 객체 -> Pydantic Schema)
