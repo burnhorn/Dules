@@ -12,7 +12,7 @@ from app.domain.schemas.user import UserRole
 from app.core.exceptions import CredentialsException, KairosException
 
 from app.services.schedule_service import ScheduleService 
-from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository, TokenRepository
+from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository, TokenRepository, CacheRepository
 
 from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
@@ -22,6 +22,7 @@ from app.infrastructure.ai.brain import FakeBrain, GeminiBrain
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
 
 from app.infrastructure.redis.token_repository import RedisTokenRepository
+from app.infrastructure.redis.cache_repository import RedisCacheRepository
 
 from app.services.chat_service import ChatService
 from app.services.auth_service import AuthService
@@ -33,6 +34,7 @@ oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 # 전역 변수로 인스턴스 캐싱
 _vector_repo_instance = None
 _token_repo_instance = None
+_cache_repo_instance = None
 
 # `ScheduleService`를 만들려면 `repo`가 필요하고 `repo`를 만들려면 `db`가 필요하므로 순서대로 조립하여 완성품 만듭니다.
 # DB 세션 생성
@@ -57,6 +59,15 @@ def get_toekn_repository() -> TokenRepository:
     if _token_repo_instance is None:
         _token_repo_instance = RedisTokenRepository()
     return _token_repo_instance
+
+def get_cache_repository() -> CacheRepository:
+    global _cache_repo_instance
+    if _cache_repo_instance is None:
+        _cache_repo_instance = RedisCacheRepository()
+    return _cache_repo_instance
+
+def get_image_processor() -> ImageProcessor:
+    return GeminiImageProcessor()
 
 # [임시] 개발용 Mock 유저 ID
 TEST_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -102,12 +113,13 @@ def get_vector_repository() -> PGVectorRepository:
 # Service 주입 (Repository 필요)
 def get_schedule_service(
         repo: SQLAlchemyScheduleRepository = Depends(get_schedule_repository),
-        vector_repo: VectorRepository = Depends(get_vector_repository)
+        vector_repo: VectorRepository = Depends(get_vector_repository),
+        image_processor: ImageProcessor = Depends(get_image_processor),
+        cache_repo: CacheRepository = Depends(get_cache_repository)
 ) -> ScheduleService:
-    return ScheduleService(repo, vector_repo)
+    return ScheduleService(repo, vector_repo, image_processor, cache_repo)
 
 def get_ai_brain() -> AIBrain:
-    # return FakeBrain()
     return GeminiBrain()
 
 def get_chat_service(
@@ -115,16 +127,6 @@ def get_chat_service(
         brain: AIBrain = Depends(get_ai_brain)
 ) -> ChatService:
     return ChatService(vector_repo, brain)
-
-def get_image_processor() -> ImageProcessor:
-    return GeminiImageProcessor()
-
-def get_schedule_service(
-        repo: SQLAlchemyScheduleRepository = Depends(get_schedule_repository),
-        vector_repo: VectorRepository = Depends(get_vector_repository),
-        image_processor: ImageProcessor = Depends(get_image_processor)
-) -> ScheduleService:
-    return ScheduleService(repo, vector_repo, image_processor)
 
 class RoleChecker:
     def __init__(self, allowed_roles: list[UserRole]):

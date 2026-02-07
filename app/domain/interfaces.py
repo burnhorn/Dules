@@ -132,3 +132,29 @@ class TokenRepository(Protocol):
         Refresh Token 삭제 (로그아웃용)
         """
         ...
+
+
+class CacheRepository(Protocol):
+    """
+    데이터 캐싱을 담당하는 인터페이스
+    """
+    async def get(self, key: str) -> Optional[str]:
+        """
+        캐시 조회
+        """
+        ...
+    async def set(self, key:str, value:str, ttl: int=3600) -> None:
+        """
+        캐시 저장 (1시간)
+        """
+        ...
+    async def delete(self, key: str) -> None:
+        """
+        캐시 삭제(Invalidation 용)
+        """
+        ...
+    async def delete_pattern(self, pattern: str) -> None:
+        """
+        특정 패턴의 키 일괄 삭제
+        """
+        ...

@@ -3,8 +3,9 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 import pytz
+import json
 
-from app.domain.interfaces import ScheduleRepository, VectorRepository, ImageProcessor
+from app.domain.interfaces import ScheduleRepository, VectorRepository, ImageProcessor, CacheRepository
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.infrastructure.db.models.schedule import ScheduleHistory
 from app.core.exceptions import ResourceNotFoundException, KairosException
@@ -13,17 +14,28 @@ from app.worker import task_save_vector
 class ScheduleService:
     """
     일정 로직의 순서와 규칙(트랜잭션)을 보장
+    - 캐시 기능 추가
     """
-    def __init__(self, repo: ScheduleRepository, vector_repo: VectorRepository, image_processor: ImageProcessor):
+    def __init__(
+            self, 
+            repo: ScheduleRepository, 
+            vector_repo: VectorRepository, 
+            image_processor: ImageProcessor, 
+            cache_repo: CacheRepository
+    ):
         self.repo = repo
         self.vector_repo = vector_repo
         self.image_processor = image_processor
+        self.cache_repo = cache_repo
 
     async def create_schedule(self,
                               data: ScheduleCreate,
                               user_id: UUID,
                               background_taks: BackgroundTasks
                               ) -> ScheduleResponse:
+        # 캐시 삭제
+        await self._invalidate_cache(user_id)
+
         # DB 객체 생성 및 세션 등록 (Insert 준비)
         created_schedule = await self.repo.create(data, user_id)
 
@@ -46,9 +58,34 @@ class ScheduleService:
         return ScheduleResponse.model_validate(created_schedule)
     
     async def get_schedules(self, user_id: UUID) -> List[ScheduleResponse]:
+        cache_key = f"schedules:user:{user_id}"
+
+        # Cache Hit Case
+        cached_data = await self.cache_repo.get(cache_key)
+        if cached_data:
+            print("[Cache] Redis에서 일정 목록 반환")
+            data_list = json.loads(cached_data)
+            return [ScheduleResponse(**item) for item in data_list]
+        
+        # Cache Miss Case
+        print("[DB] 데이터베이스 조회 중...")
         schedules = await self.repo.get_all_by_user(user_id)
-        return [ScheduleResponse.model_validate(s) for s in schedules]
+        response = [ScheduleResponse.model_validate(s) for s in schedules]
+
+        # Serialization
+        json_str = json.dumps([r.model_dump(mode='json') for r in response])
+        await self.cache_repo.set(cache_key, json_str, ttl=300)
+
+        return response
     
+    async def _invalidate_cache(self, user_id: UUID):
+        """
+        Cache Invalidation (Create, Update 시 활용)
+        """
+        cache_key = f"schedules:user:{user_id}"
+        await self.cache_repo.delete(cache_key)
+        print(f"[Cache] 캐시 삭제 완료: {cache_key}")
+
     async def update_schedule(
             self,
             schedule_id: UUID,
@@ -56,7 +93,9 @@ class ScheduleService:
             user_id: UUID,
             background_tasks: BackgroundTasks
     ) -> ScheduleResponse:
-        
+        # 캐시 삭제
+        await self._invalidate_cache(user_id)
+
         # 기존 일정 조회 (없으면 404)
         schedule = await self.repo.get_by_id(schedule_id)
         if not schedule:
