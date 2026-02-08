@@ -10,12 +10,15 @@ from langchain_core.documents import Document
 from app.core.config import settings
 from app.domain.interfaces import VectorRepository
 
+
+CURRENT_MODEL = settings.GOOGLE_EMBEDDINGS_MODEL
+
 class PGVectorRepository(VectorRepository):
     def __init__(self):
-        # print("[Debug] PGVector Repository 초기화 (Sync Wrapper Mode)...")
+        print(f"[Debug] PGVector Repository 초기화 (Model: {CURRENT_MODEL})...")
         
         self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004", 
+            model=CURRENT_MODEL, 
             google_api_key=settings.GOOGLE_API_KEY
         )
 
@@ -24,9 +27,10 @@ class PGVectorRepository(VectorRepository):
         self.connection_string = settings.DATABASE_URL.replace(
             "postgresql+asyncpg", "postgresql+psycopg"
         )
-
-        self.collection_name = "kairos_schedules"
         
+        sanitized_model_name = CURRENT_MODEL.replace("/", "_").replace("-", "_")
+        self.collection_name = f"kairos_schedules_{sanitized_model_name}"
+
         # PGVector를 동기 모드로 초기화
         self.vector_store = PGVector(
             embeddings=self.embeddings,
@@ -45,11 +49,12 @@ class PGVectorRepository(VectorRepository):
     async def save(self, text: str, user_id: UUID, metadata: dict = None) -> None:
         if metadata is None: metadata = {}
         metadata["user_id"] = str(user_id)
+        metadata["model_version"] = CURRENT_MODEL
         
         doc = Document(page_content=text, metadata=metadata)
         doc_id = metadata.get("schedule_id", str(uuid.uuid4()))
 
-        print(f"[PGVector] 백그라운드 저장 시작: {text[:10]}...")
+        print(f"[PGVector] 백그라운드 저장 시작: {text[:10]}... (Collection: {self.collection_name})")
         
         # 동기 메서드(add_documents)를 스레드 풀에서 실행
         loop = asyncio.get_running_loop()
