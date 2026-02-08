@@ -11,11 +11,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.config import settings
 from app.domain.interfaces import VectorRepository
 
-CURRENT_MODEL = settings.GOOGLE_EMBEDDINGS_MODEL
-
-
 class PGVectorRepository(VectorRepository):
     def __init__(self):
+        CURRENT_MODEL = settings.GOOGLE_EMBEDDINGS_MODEL
+        
         print(f"[Debug] PGVector Repository 초기화 (Model: {CURRENT_MODEL})...")
 
         self.embeddings = GoogleGenerativeAIEmbeddings(
