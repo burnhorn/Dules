@@ -7,7 +7,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_router
 from app.core.exceptions import KairosException
+from app.core.logging import setup_logging
+from app.core.middleware import RequestLogMiddleware
 
+# json_logs값: 개발계 - False, 운영계 - False
+setup_logging(json_logs=False, log_level="INFO")
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -19,6 +23,8 @@ def create_app() -> FastAPI:
     origins = [
         "http://localhost:5173",
     ]
+    
+    app.add_middleware(RequestLogMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

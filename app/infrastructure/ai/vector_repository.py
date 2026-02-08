@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+import structlog
 from typing import List
 from uuid import UUID
 
@@ -11,14 +12,14 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.config import settings
 from app.domain.interfaces import VectorRepository
 
+logger = structlog.get_logger()
+
 class PGVectorRepository(VectorRepository):
     def __init__(self):
-        CURRENT_MODEL = settings.GOOGLE_EMBEDDINGS_MODEL
+        self.CURRENT_MODEL = settings.GOOGLE_EMBEDDINGS_MODEL
         
-        print(f"[Debug] PGVector Repository 초기화 (Model: {CURRENT_MODEL})...")
-
         self.embeddings = GoogleGenerativeAIEmbeddings(
-            model=CURRENT_MODEL, google_api_key=settings.GOOGLE_API_KEY
+            model=self.CURRENT_MODEL, google_api_key=settings.GOOGLE_API_KEY
         )
 
         # 동기용 드라이버 사용 (psycopg)
@@ -27,7 +28,7 @@ class PGVectorRepository(VectorRepository):
             "postgresql+asyncpg", "postgresql+psycopg"
         )
 
-        sanitized_model_name = CURRENT_MODEL.replace("/", "_").replace("-", "_")
+        sanitized_model_name = self.CURRENT_MODEL.replace("/", "_").replace("-", "_")
         self.collection_name = f"kairos_schedules_{sanitized_model_name}"
 
         # PGVector를 동기 모드로 초기화
@@ -38,7 +39,6 @@ class PGVectorRepository(VectorRepository):
             use_jsonb=True,
             create_extension=False,
         )
-        print("PGVector Repository Ready!")
 
     @retry(
         stop=stop_after_attempt(5),
@@ -46,17 +46,15 @@ class PGVectorRepository(VectorRepository):
         reraise=True,
     )
     async def save(self, text: str, user_id: UUID, metadata: dict = None) -> None:
+        logger.info("vector_save_start", text_snippet=text[:10], collection=self.collection_name)
+
         if metadata is None:
             metadata = {}
         metadata["user_id"] = str(user_id)
-        metadata["model_version"] = CURRENT_MODEL
+        metadata["model_version"] = self.CURRENT_MODEL
 
         doc = Document(page_content=text, metadata=metadata)
         doc_id = metadata.get("schedule_id", str(uuid.uuid4()))
-
-        print(
-            f"[PGVector] 백그라운드 저장 시작: {text[:10]}... (Collection: {self.collection_name})"
-        )
 
         # 동기 메서드(add_documents)를 스레드 풀에서 실행
         loop = asyncio.get_running_loop()
@@ -65,13 +63,12 @@ class PGVectorRepository(VectorRepository):
                 None,
                 lambda: self.vector_store.add_documents(documents=[doc], ids=[doc_id]),
             )
-            print(f"[PGVector] 저장 성공! ID: {doc_id}")
+            logger.info("vector_save_suceess", doc_id=doc_id)
         except Exception as e:
-            print(f"[PGVector] 저장 실패: {e}")
-            raise e
+            logger.error("vector_save_failed", error=str(e))
 
     async def search(self, query: str, user_id: UUID, limit: int = 3) -> List[str]:
-        print(f"[PGVector] 검색 요청: {query}")
+        logger.info("[PGVector] 검색 요청", {query})
 
         loop = asyncio.get_running_loop()
 
@@ -82,8 +79,7 @@ class PGVectorRepository(VectorRepository):
                 query, k=limit, filter={"user_id": str(user_id)}
             ),
         )
-
-        print(f"[PGVector] 검색 완료: {len(results)}건")
+        logger.info("[PGVector] 검색 완료", {len(results)})
         return [doc.page_content for doc in results]
 
     async def delete(self, doc_id: str) -> None:

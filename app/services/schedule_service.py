@@ -1,4 +1,5 @@
 import json
+import structlog
 from datetime import datetime
 from typing import List
 from uuid import UUID
@@ -17,6 +18,7 @@ from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, Schedu
 from app.infrastructure.db.models.schedule import ScheduleHistory
 from app.worker import task_save_vector
 
+logger = structlog.get_logger()
 
 class ScheduleService:
     """
@@ -66,15 +68,17 @@ class ScheduleService:
     async def get_schedules(self, user_id: UUID) -> List[ScheduleResponse]:
         cache_key = f"schedules:user:{user_id}"
 
+        log = logger.bind(user_id=str(user_id))
+
         # Cache Hit Case
         cached_data = await self.cache_repo.get(cache_key)
         if cached_data:
-            print("[Cache] Redis에서 일정 목록 반환")
+            log.info("cache_hit", source="redis")
             data_list = json.loads(cached_data)
             return [ScheduleResponse(**item) for item in data_list]
 
         # Cache Miss Case
-        print("[DB] 데이터베이스 조회 중...")
+        log.info("cache_miss", source="db")
         schedules = await self.repo.get_all_by_user(user_id)
         response = [ScheduleResponse.model_validate(s) for s in schedules]
 
