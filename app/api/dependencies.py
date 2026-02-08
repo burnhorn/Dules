@@ -1,79 +1,110 @@
+from functools import lru_cache
 from typing import AsyncGenerator
+
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 
 from app.core.config import settings
+from app.core.exceptions import CredentialsException, KairosException
 from app.domain.schemas.token import TokenData
 from app.domain.schemas.user import UserRole
-from app.core.exceptions import CredentialsException, KairosException
 
-from app.services.schedule_service import ScheduleService 
+# Interface
 from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository, TokenRepository, CacheRepository
 
+# Implementations
 from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
 from app.infrastructure.db.repositories.user import SQLAlchemyUserRepository
 from app.infrastructure.ai.vector_repository import PGVectorRepository
-from app.infrastructure.ai.brain import FakeBrain, GeminiBrain
+from app.infrastructure.ai.brain import GeminiBrain
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
-
 from app.infrastructure.redis.token_repository import RedisTokenRepository
 from app.infrastructure.redis.cache_repository import RedisCacheRepository
 
+# Services
 from app.services.chat_service import ChatService
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
+from app.services.schedule_service import ScheduleService 
 
-#OAuth2 스키마 및 로그인 처리 API 주소
-oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
-
-# 전역 변수로 인스턴스 캐싱
-_vector_repo_instance = None
-_token_repo_instance = None
-_cache_repo_instance = None
-
-# `ScheduleService`를 만들려면 `repo`가 필요하고 `repo`를 만들려면 `db`가 필요하므로 순서대로 조립하여 완성품 만듭니다.
-# DB 세션 생성
+# =================================================================
+# Database Session
+# =================================================================
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
         yield session
 
-# Repository 주입 (Session 필요)
+# =================================================================
+# Infrastructure Singletons
+# =================================================================
+@lru_cache
+def get_vector_repository() -> VectorRepository:
+    print("Initializing PGVector Repository (Singleton)")
+    return PGVectorRepository()
+
+@lru_cache
+def get_image_processor() -> ImageProcessor:
+    return GeminiImageProcessor()
+
+@lru_cache
+def get_ai_brain() -> AIBrain:
+    return GeminiBrain()
+
+@lru_cache
+def get_toekn_repository() -> TokenRepository:
+    return RedisTokenRepository()
+
+@lru_cache
+def get_cache_repository() -> CacheRepository:
+    return RedisCacheRepository()
+    
+
+# =================================================================
+# Repository Factories
+# =================================================================
 def get_schedule_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemyScheduleRepository:
     return SQLAlchemyScheduleRepository(db)
 
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
-    return SQLAlchemyUserRepository(db) # SQLAchemy 구현체 반환
+    return SQLAlchemyUserRepository(db)
 
+
+# =================================================================
+# Service Factories
+# =================================================================
 def get_user_service(
         repo: UserRepository = Depends(get_user_repository)
 ) -> UserService:
     return UserService(repo)
 
-def get_toekn_repository() -> TokenRepository:
-    global _token_repo_instance
-    if _token_repo_instance is None:
-        _token_repo_instance = RedisTokenRepository()
-    return _token_repo_instance
-
-def get_cache_repository() -> CacheRepository:
-    global _cache_repo_instance
-    if _cache_repo_instance is None:
-        _cache_repo_instance = RedisCacheRepository()
-    return _cache_repo_instance
-
-def get_image_processor() -> ImageProcessor:
-    return GeminiImageProcessor()
-
-# [임시] 개발용 Mock 유저 ID
-TEST_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
-
-def get_auth_servcie(token_repo: TokenRepository = Depends(get_toekn_repository)) -> AuthService:
+def get_auth_servcie(
+        token_repo: TokenRepository = Depends(get_toekn_repository)
+) -> AuthService:
     return AuthService(token_repo)
+
+def get_schedule_service(
+        repo: SQLAlchemyScheduleRepository = Depends(get_schedule_repository),
+        vector_repo: VectorRepository = Depends(get_vector_repository),
+        image_processor: ImageProcessor = Depends(get_image_processor),
+        cache_repo: CacheRepository = Depends(get_cache_repository)
+) -> ScheduleService:
+    return ScheduleService(repo, vector_repo, image_processor, cache_repo)
+
+def get_chat_service(
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    brain: AIBrain = Depends(get_ai_brain)
+) -> ChatService:
+    return ChatService(vector_repo, brain)
+
+
+# =================================================================
+# Security Dependencies
+# =================================================================
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 async def get_current_user_id(token: str = Depends(oauth2_schema),
                         token_repo: TokenRepository = Depends(get_toekn_repository)) -> UUID:
@@ -97,36 +128,6 @@ async def get_current_user_id(token: str = Depends(oauth2_schema),
         raise ConnectionError()
 
     return UUID(token_data.user_id)
-
-# Repository 주입 (Session 불필요)
-def get_vector_repository() -> PGVectorRepository:
-    global _vector_repo_instance
-    if _vector_repo_instance is None:
-        print("Initializing PGVector Repository")
-        try:
-            _vector_repo_instance = PGVectorRepository()
-        except Exception as e:
-            print(f"Error initializing PGVector Repo: {e}")
-            raise e
-    return _vector_repo_instance
-
-# Service 주입 (Repository 필요)
-def get_schedule_service(
-        repo: SQLAlchemyScheduleRepository = Depends(get_schedule_repository),
-        vector_repo: VectorRepository = Depends(get_vector_repository),
-        image_processor: ImageProcessor = Depends(get_image_processor),
-        cache_repo: CacheRepository = Depends(get_cache_repository)
-) -> ScheduleService:
-    return ScheduleService(repo, vector_repo, image_processor, cache_repo)
-
-def get_ai_brain() -> AIBrain:
-    return GeminiBrain()
-
-def get_chat_service(
-        vector_repo: VectorRepository = Depends(get_vector_repository),
-        brain: AIBrain = Depends(get_ai_brain)
-) -> ChatService:
-    return ChatService(vector_repo, brain)
 
 class RoleChecker:
     def __init__(self, allowed_roles: list[UserRole]):
