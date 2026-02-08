@@ -1,14 +1,15 @@
-import redis.asyncio as redis
 from typing import Optional
-from app.domain.interfaces import CacheRepository
+
+import redis.asyncio as redis
+
 from app.core.config import settings
+from app.domain.interfaces import CacheRepository
+
 
 class RedisCacheRepository(CacheRepository):
     def __init__(self):
         self.redis = redis.from_url(
-            settings.REDIS_URL,
-            encoding="utf-8",
-            decode_responses=True
+            settings.REDIS_URL, encoding="utf-8", decode_responses=True
         )
 
     async def get(self, key: str) -> Optional[str]:
@@ -19,7 +20,7 @@ class RedisCacheRepository(CacheRepository):
 
     async def delete(self, key: str) -> None:
         await self.redis.delete(key)
-        
+
     async def delete_pattern(self, pattern: str) -> None:
         """
         특정 패턴의 키를 찾아 모두 삭제

@@ -1,35 +1,44 @@
 from functools import lru_cache
 from typing import AsyncGenerator
-
 from uuid import UUID
-from jose import JWTError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import CredentialsException, KairosException
+
+# Interface
+from app.domain.interfaces import (
+    AIBrain,
+    CacheRepository,
+    ImageProcessor,
+    TokenRepository,
+    UserRepository,
+    VectorRepository,
+)
 from app.domain.schemas.token import TokenData
 from app.domain.schemas.user import UserRole
 
-# Interface
-from app.domain.interfaces import AIBrain, ImageProcessor, VectorRepository, UserRepository, TokenRepository, CacheRepository
-
 # Implementations
 from app.infrastructure.db.session import SessionLocal
-from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
-from app.infrastructure.db.repositories.user import SQLAlchemyUserRepository
-from app.infrastructure.ai.vector_repository import PGVectorRepository
+from app.infrastructure.redis.cache_repository import RedisCacheRepository
+from app.infrastructure.redis.token_repository import RedisTokenRepository
+
 from app.infrastructure.ai.brain import GeminiBrain
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
-from app.infrastructure.redis.token_repository import RedisTokenRepository
-from app.infrastructure.redis.cache_repository import RedisCacheRepository
+from app.infrastructure.ai.vector_repository import PGVectorRepository
+from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
+from app.infrastructure.db.repositories.user import SQLAlchemyUserRepository
 
 # Services
 from app.services.chat_service import ChatService
+from app.services.schedule_service import ScheduleService
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
-from app.services.schedule_service import ScheduleService 
+
 
 # =================================================================
 # Database Session
@@ -37,6 +46,7 @@ from app.services.schedule_service import ScheduleService
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
         yield session
+
 
 # =================================================================
 # Infrastructure Singletons
@@ -46,28 +56,35 @@ def get_vector_repository() -> VectorRepository:
     print("Initializing PGVector Repository (Singleton)")
     return PGVectorRepository()
 
+
 @lru_cache
 def get_image_processor() -> ImageProcessor:
     return GeminiImageProcessor()
+
 
 @lru_cache
 def get_ai_brain() -> AIBrain:
     return GeminiBrain()
 
+
 @lru_cache
 def get_toekn_repository() -> TokenRepository:
     return RedisTokenRepository()
 
+
 @lru_cache
 def get_cache_repository() -> CacheRepository:
     return RedisCacheRepository()
-    
+
 
 # =================================================================
 # Repository Factories
 # =================================================================
-def get_schedule_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemyScheduleRepository:
+def get_schedule_repository(
+    db: AsyncSession = Depends(get_db),
+) -> SQLAlchemyScheduleRepository:
     return SQLAlchemyScheduleRepository(db)
+
 
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return SQLAlchemyUserRepository(db)
@@ -77,26 +94,29 @@ def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
 # Service Factories
 # =================================================================
 def get_user_service(
-        repo: UserRepository = Depends(get_user_repository)
+    repo: UserRepository = Depends(get_user_repository),
 ) -> UserService:
     return UserService(repo)
 
+
 def get_auth_servcie(
-        token_repo: TokenRepository = Depends(get_toekn_repository)
+    token_repo: TokenRepository = Depends(get_toekn_repository),
 ) -> AuthService:
     return AuthService(token_repo)
 
+
 def get_schedule_service(
-        repo: SQLAlchemyScheduleRepository = Depends(get_schedule_repository),
-        vector_repo: VectorRepository = Depends(get_vector_repository),
-        image_processor: ImageProcessor = Depends(get_image_processor),
-        cache_repo: CacheRepository = Depends(get_cache_repository)
+    repo: SQLAlchemyScheduleRepository = Depends(get_schedule_repository),
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    image_processor: ImageProcessor = Depends(get_image_processor),
+    cache_repo: CacheRepository = Depends(get_cache_repository),
 ) -> ScheduleService:
     return ScheduleService(repo, vector_repo, image_processor, cache_repo)
 
+
 def get_chat_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
-    brain: AIBrain = Depends(get_ai_brain)
+    brain: AIBrain = Depends(get_ai_brain),
 ) -> ChatService:
     return ChatService(vector_repo, brain)
 
@@ -106,8 +126,11 @@ def get_chat_service(
 # =================================================================
 oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-async def get_current_user_id(token: str = Depends(oauth2_schema),
-                        token_repo: TokenRepository = Depends(get_toekn_repository)) -> UUID:
+
+async def get_current_user_id(
+    token: str = Depends(oauth2_schema),
+    token_repo: TokenRepository = Depends(get_toekn_repository),
+) -> UUID:
     """
     HTTP 요청 헤더(Authorization: Bearer <Token>)에서 토큰을 꺼내 검증하고
     그 안에 들어 있는 user_id를 반환합니다.
@@ -116,18 +139,21 @@ async def get_current_user_id(token: str = Depends(oauth2_schema),
         raise CredentialsException()
 
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         user_id_str: str = payload.get("sub")
 
         if user_id_str is None:
             raise CredentialsException()
 
         token_data = TokenData(user_id=user_id_str)
-    
+
     except JWTError:
         raise ConnectionError()
 
     return UUID(token_data.user_id)
+
 
 class RoleChecker:
     def __init__(self, allowed_roles: list[UserRole]):
@@ -138,20 +164,23 @@ class RoleChecker:
         토큰 안에 있는 role이 허용된 목록에 있는지 확인
         """
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            )
             role_str = payload.get("role")
 
             if role_str is None:
                 raise CredentialsException()
-            
+
             if role_str not in [r.value for r in self.allowed_roles]:
                 raise KairosException(
                     message="권한이 부족합니다.",
                     code="PERMISSION-DENIED",
-                    status_code=403
+                    status_code=403,
                 )
         except JWTError:
             raise CredentialsException()
-            
+
+
 # 관리자용 의존성 인스턴스
 allowed_roles_only = RoleChecker([UserRole.ADMIN])

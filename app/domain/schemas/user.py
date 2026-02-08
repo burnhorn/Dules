@@ -1,26 +1,34 @@
-from enum import Enum
-from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from enum import Enum
 from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, EmailStr, Field
+
 
 # 유저 역할 부여용
 class UserRole(str, Enum):
     USER = "USER"
     ADMIN = "ADMIN"
 
+
 # 공통 속성
 class UserBase(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=2, max_length=50)
 
+
 # 회원가입 요청 (비밀번호 입력 받기)
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=8, description="비밀번호는 최소 8자 이상입니다.")
+    password: str = Field(
+        ..., min_length=8, description="비밀번호는 최소 8자 이상입니다."
+    )
+
 
 # DB 저장용 내부 스키마 (해시된 비밀번호 사용)
 class UserInDB(UserBase):
     hashed_password: str
+
 
 # 클라이언트 응답용 (비밀번호 미포함)
 class UserResponse(UserBase):
@@ -29,6 +37,6 @@ class UserResponse(UserBase):
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
-        from_attributes = True # ORM -> Pydantic 변환 허용
+        from_attributes = True  # ORM -> Pydantic 변환 허용

@@ -1,38 +1,44 @@
-from fastapi import BackgroundTasks, HTTPException
-from typing import List, Optional
-from uuid import UUID
-from datetime import datetime
-import pytz
 import json
+from datetime import datetime
+from typing import List
+from uuid import UUID
 
-from app.domain.interfaces import ScheduleRepository, VectorRepository, ImageProcessor, CacheRepository
+import pytz
+from fastapi import BackgroundTasks
+
+from app.core.exceptions import KairosException, ResourceNotFoundException
+from app.domain.interfaces import (
+    CacheRepository,
+    ImageProcessor,
+    ScheduleRepository,
+    VectorRepository,
+)
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.infrastructure.db.models.schedule import ScheduleHistory
-from app.core.exceptions import ResourceNotFoundException, KairosException
 from app.worker import task_save_vector
+
 
 class ScheduleService:
     """
     일정 로직의 순서와 규칙(트랜잭션)을 보장
     - 캐시 기능 추가
     """
+
     def __init__(
-            self, 
-            repo: ScheduleRepository, 
-            vector_repo: VectorRepository, 
-            image_processor: ImageProcessor, 
-            cache_repo: CacheRepository
+        self,
+        repo: ScheduleRepository,
+        vector_repo: VectorRepository,
+        image_processor: ImageProcessor,
+        cache_repo: CacheRepository,
     ):
         self.repo = repo
         self.vector_repo = vector_repo
         self.image_processor = image_processor
         self.cache_repo = cache_repo
 
-    async def create_schedule(self,
-                              data: ScheduleCreate,
-                              user_id: UUID,
-                              background_taks: BackgroundTasks
-                              ) -> ScheduleResponse:
+    async def create_schedule(
+        self, data: ScheduleCreate, user_id: UUID, background_taks: BackgroundTasks
+    ) -> ScheduleResponse:
         # 캐시 삭제
         await self._invalidate_cache(user_id)
 
@@ -51,12 +57,12 @@ class ScheduleService:
         task_save_vector.delay(
             text=text_to_embed,
             user_id=str(user_id),
-            schedule_id=str(created_schedule.id)
+            schedule_id=str(created_schedule.id),
         )
-        
+
         # 응답 반환 (ORM 객체 -> Pydantic Schema)
         return ScheduleResponse.model_validate(created_schedule)
-    
+
     async def get_schedules(self, user_id: UUID) -> List[ScheduleResponse]:
         cache_key = f"schedules:user:{user_id}"
 
@@ -66,18 +72,18 @@ class ScheduleService:
             print("[Cache] Redis에서 일정 목록 반환")
             data_list = json.loads(cached_data)
             return [ScheduleResponse(**item) for item in data_list]
-        
+
         # Cache Miss Case
         print("[DB] 데이터베이스 조회 중...")
         schedules = await self.repo.get_all_by_user(user_id)
         response = [ScheduleResponse.model_validate(s) for s in schedules]
 
         # Serialization
-        json_str = json.dumps([r.model_dump(mode='json') for r in response])
+        json_str = json.dumps([r.model_dump(mode="json") for r in response])
         await self.cache_repo.set(cache_key, json_str, ttl=300)
 
         return response
-    
+
     async def _invalidate_cache(self, user_id: UUID):
         """
         Cache Invalidation (Create, Update 시 활용)
@@ -87,11 +93,11 @@ class ScheduleService:
         print(f"[Cache] 캐시 삭제 완료: {cache_key}")
 
     async def update_schedule(
-            self,
-            schedule_id: UUID,
-            update_date: ScheduleUpdate,
-            user_id: UUID,
-            background_tasks: BackgroundTasks
+        self,
+        schedule_id: UUID,
+        update_date: ScheduleUpdate,
+        user_id: UUID,
+        background_tasks: BackgroundTasks,
     ) -> ScheduleResponse:
         # 캐시 삭제
         await self._invalidate_cache(user_id)
@@ -100,21 +106,21 @@ class ScheduleService:
         schedule = await self.repo.get_by_id(schedule_id)
         if not schedule:
             raise ResourceNotFoundException(resource="일정")
-        
+
         # 보안요소: 내 일정이 맞는지 확인
         if schedule.user_id != user_id:
             raise KairosException(
                 message="수정 권한이 없습니다.",
                 code="PERMISSION_DENIED",
-                status_code=403
+                status_code=403,
             )
-        
+
         # 이력(history) 기록 (변경 전 상태 스냅샷)
         history = ScheduleHistory(
-            schedule_id = schedule.id,
-            previous_title = schedule.title,
-            previous_start_at = schedule.start_at,
-            previous_end_at = schedule.end_at
+            schedule_id=schedule.id,
+            previous_title=schedule.title,
+            previous_start_at=schedule.start_at,
+            previous_end_at=schedule.end_at,
         )
         await self.repo.create_history(history)
 
@@ -122,7 +128,7 @@ class ScheduleService:
         update_dict = update_date.model_dump(exclude_unset=True)
 
         for key, value in update_dict.items():
-            setattr(schedule, key, value) # 객체 속성 덮어쓰기
+            setattr(schedule, key, value)  # 객체 속성 덮어쓰기
 
         await self.repo.update(schedule)
 
@@ -131,12 +137,14 @@ class ScheduleService:
 
         # 벡터 데이터 업데이트
         if update_date.title or update_date.description:
-            text_to_embed = f"일정: {schedule.title}\n내용:{schedule.description or '없음'}"
+            text_to_embed = (
+                f"일정: {schedule.title}\n내용:{schedule.description or '없음'}"
+            )
             background_tasks.add_task(
                 self.vector_repo.save,
                 text=text_to_embed,
                 user_id=user_id,
-                metadata={"schedule_id": str(schedule.id)}
+                metadata={"schedule_id": str(schedule.id)},
             )
 
         return ScheduleResponse.model_validate(schedule)
@@ -149,23 +157,23 @@ class ScheduleService:
 
         if not results:
             return ["관련된 과거 일정을 찾을 수 없습니다."]
-        
+
         return results
-    
+
     async def create_schedule_from_image(
-            self,
-            image_bytes: bytes,
-            mime_type: str,
-            user_id: UUID,
-            background_tasks: BackgroundTasks
+        self,
+        image_bytes: bytes,
+        mime_type: str,
+        user_id: UUID,
+        background_tasks: BackgroundTasks,
     ) -> ScheduleResponse:
-        
+
         kst = pytz.timezone("Asia/Seoul")
         now_kst = datetime.now(kst)
 
         schedule_data = await self.image_processor.extract_schedule(
             image_bytes, mime_type, now_kst
-            )
-        
+        )
+
         # DRY 원칙: 기존의 메서드 활용하여 DB 저장
         return await self.create_schedule(schedule_data, user_id, background_tasks)

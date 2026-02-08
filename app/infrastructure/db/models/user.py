@@ -1,17 +1,21 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, Boolean, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 
-from app.infrastructure.db.base import Base
+from sqlalchemy import Boolean, Column, DateTime, String
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.domain.schemas.user import UserRole
+from app.infrastructure.db.base import Base
+
 
 class User(Base):
     """
     사용자(User) 엔티티
     - 핵심: 비밀번호는 반드시 Hash 된 상태로 저장된다.
     """
+
     __tablename__ = "users"
 
     # 식별자
@@ -21,7 +25,9 @@ class User(Base):
     role = Column(SQLEnum(UserRole), default=UserRole.USER, nullable=False)
 
     # 기본 정보
-    email = Column(String(255), unique=True, nullable=False, index=True) # 검색을 위한 index 추가
+    email = Column(
+        String(255), unique=True, nullable=False, index=True
+    )  # 검색을 위한 index 추가
     name = Column(String(100), nullable=False)
 
     # 객체 일관성: 명확한 이름 사용(평문 저장 금지 암시)
@@ -35,4 +41,6 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # 관계 정리
-    schedules = relationship("Schedule", back_populates="user", cascade="all, delete-orphan")
+    schedules = relationship(
+        "Schedule", back_populates="user", cascade="all, delete-orphan"
+    )

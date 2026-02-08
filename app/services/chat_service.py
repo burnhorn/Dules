@@ -1,6 +1,8 @@
 from uuid import UUID
-from app.domain.interfaces import VectorRepository, AIBrain
+
+from app.domain.interfaces import AIBrain, VectorRepository
 from app.domain.schemas.chat import ChatRequest, ChatResponse
+
 
 class ChatService:
     def __init__(self, vector_repo: VectorRepository, brain: AIBrain):
@@ -10,9 +12,7 @@ class ChatService:
     async def chat(self, user_id: UUID, request: ChatRequest) -> ChatResponse:
         # Retrieval 구현: 사용자 질문과 관련된 과거 기억(일정) 검색
         relevant_docs = await self.vector_repo.search(
-            query=request.message,
-            user_id=user_id,
-            limit=3
+            query=request.message, user_id=user_id, limit=3
         )
 
         # Context 구현: 검색된 일정 통합

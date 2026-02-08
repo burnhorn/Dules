@@ -1,28 +1,30 @@
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, status, BackgroundTasks, UploadFile, File
 
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
+
+from app.api.dependencies import get_current_user_id, get_schedule_service
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.services.schedule_service import ScheduleService
-from app.api.dependencies import get_schedule_service, get_current_user_id
 
 router = APIRouter()
+
 
 @router.post(
     "/",
     response_model=ScheduleResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="새 일정 생성"
+    summary="새 일정 생성",
 )
 async def create_schedule(
     schedule_in: ScheduleCreate,
     background_tasks: BackgroundTasks,
     service: ScheduleService = Depends(get_schedule_service),
-    user_id: UUID = Depends(get_current_user_id)
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """
     새로운 일정(Event/Task)를 생성합니다.
-    
+
     :param schedule_in: EVENT(시간 확정 일정) 또는 TASK(마감 기반 일정)
     :type schedule_in: ScheduleCreate
     :param service: 비즈니스 로직
@@ -33,14 +35,10 @@ async def create_schedule(
     return await service.create_schedule(schedule_in, user_id, background_tasks)
 
 
-@router.get(
-    "/",
-    response_model=List[ScheduleResponse],
-    summary="내 일정 목록 조회"
-)
+@router.get("/", response_model=List[ScheduleResponse], summary="내 일정 목록 조회")
 async def read_schedules(
     service: ScheduleService = Depends(get_schedule_service),
-    user_id: UUID = Depends(get_current_user_id)
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """
     현재 사용자의 모든 일정을 조회합니다.
@@ -53,22 +51,18 @@ async def read_schedules(
     return await service.get_schedules(user_id)
 
 
-@router.patch(
-    "/{schedule_id}",
-    response_model=ScheduleResponse,
-    summary="일정 수정"
-)
+@router.patch("/{schedule_id}", response_model=ScheduleResponse, summary="일정 수정")
 async def update_schedule(
     schedule_id: UUID,
     schedule_in: ScheduleUpdate,
     background_tasks: BackgroundTasks,
     service: ScheduleService = Depends(get_schedule_service),
-    user_id: UUID = Depends(get_current_user_id)
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """
     일정의 일부 정보를 수정합니다.
     수정 시 과거 이력이 자동으로 저장됩니다.
-    
+
     :param schedule_id: 일정 식별값
     :type schedule_id: UUID
     :param schedule_in: 수정할 일정 정보
@@ -78,13 +72,16 @@ async def update_schedule(
     :param user_id: 현재 로그인한 유저 ID
     :type user_id: UUID
     """
-    return await service.update_schedule(schedule_id, schedule_in, user_id, background_tasks)
+    return await service.update_schedule(
+        schedule_id, schedule_in, user_id, background_tasks
+    )
+
 
 @router.get("/search", summary="자연어 일정 검색 (Vector Search)")
 async def search_schedules(
     query: str,
     service: ScheduleService = Depends(get_schedule_service),
-    user_id: UUID = Depends(get_current_user_id)
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """
     'A 프로젝트는 언제까지야?"와 같이 자연어로 질문하면
@@ -100,12 +97,15 @@ async def search_schedules(
 
     return await service.search_schedules(query, user_id)
 
-@router.post("/image", response_model=ScheduleResponse, summary="이미지로 일정 등록 (OCR)")
+
+@router.post(
+    "/image", response_model=ScheduleResponse, summary="이미지로 일정 등록 (OCR)"
+)
 async def create_schedule_by_image(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     servcie: ScheduleService = Depends(get_schedule_service),
-    user_id: UUID = Depends(get_current_user_id)
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """
     이미지 파일(청첩장, 시간표 등)을 업로드하면 내용을 분석하여 일정을 자동 등록합니다.
@@ -116,5 +116,5 @@ async def create_schedule_by_image(
         image_bytes=contents,
         mime_type=file.content_type,
         user_id=user_id,
-        background_tasks=background_tasks
+        background_tasks=background_tasks,
     )

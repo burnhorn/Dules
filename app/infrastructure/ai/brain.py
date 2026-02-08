@@ -1,17 +1,20 @@
 import asyncio
-from tenacity import retry, stop_after_attempt, wait_exponential
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 
-from app.domain.interfaces import AIBrain
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from app.core.config import settings
+from app.domain.interfaces import AIBrain
+
 
 class FakeBrain(AIBrain):
     """
     개발 및 테스트용 가짜 두뇌
     외부 API를 호출하지 않고 고정된 응답을 반환합니다.
     """
+
     async def ask(self, question: str, context: str) -> str:
         await asyncio.sleep(0.5)
 
@@ -20,6 +23,7 @@ class FakeBrain(AIBrain):
             f"질문하신 '{question}'에 대해 답변드립니다.\n"
             f"참고한 과거 일정 정보:\n{context or '없음'}"
         )
+
 
 class GeminiBrain(AIBrain):
     def __init__(self):
@@ -31,7 +35,7 @@ class GeminiBrain(AIBrain):
         self.llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
             google_api_key=settings.GOOGLE_API_KEY,
-            temperature=0.3
+            temperature=0.3,
         )
 
         self.prompt = ChatPromptTemplate.from_template(
@@ -48,26 +52,25 @@ class GeminiBrain(AIBrain):
             [질문]
             {question}
             """
-            )
+        )
 
         self.chain = self.prompt | self.llm | StrOutputParser()
         print("[Brain] GeminiBrain 준비 완료!")
-    
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=5),
-        reraise=True
+        reraise=True,
     )
     async def ask(self, question: str, context: str) -> str:
         try:
-            response = await self.chain.ainvoke({
-                "question": question,
-                "context": context
-            })
+            response = await self.chain.ainvoke(
+                {"question": question, "context": context}
+            )
             if response is None:
-                    print("[Brain] 답변이 None입니다.")
-                    return "죄송합니다. 답변을 생성하는 데 문제가 발생했습니다."
-                    
+                print("[Brain] 답변이 None입니다.")
+                return "죄송합니다. 답변을 생성하는 데 문제가 발생했습니다."
+
             print(f"[Brain] 답변 완료: {response[:20]}...")
             return response
 

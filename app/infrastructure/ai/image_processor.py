@@ -1,17 +1,18 @@
-import json
 import base64
 from datetime import datetime
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 from langchain.messages import HumanMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.domain.interfaces import ImageProcessor
 from app.domain.schemas.schedule import ScheduleCreate
 
+
 class GeminiImageProcessor(ImageProcessor):
     def __init__(self):
-        
+
         self.llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
             google_api_key=settings.GOOGLE_API_KEY,
@@ -19,13 +20,15 @@ class GeminiImageProcessor(ImageProcessor):
         )
 
         print("[Vision] GeminiImageProcessor 초기화 완료")
-    
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
-        reraise=True
+        reraise=True,
     )
-    async def extract_schedule(self, image_bytes: str, mime_type: str, reference_date: datetime) -> ScheduleCreate:
+    async def extract_schedule(
+        self, image_bytes: str, mime_type: str, reference_date: datetime
+    ) -> ScheduleCreate:
         print("[Vision] 이미지 분석 시작...")
 
         image_data = base64.b64encode(image_bytes).decode("utf-8")
@@ -34,7 +37,9 @@ class GeminiImageProcessor(ImageProcessor):
 
         message = HumanMessage(
             content=[
-                {"type": "text", "text": """
+                {
+                    "type": "text",
+                    "text": """
                 이 이미지에서 일정 정보를 추출해줘.
                 
                 [규칙]
@@ -48,8 +53,13 @@ class GeminiImageProcessor(ImageProcessor):
                    - 'TASK'라면 deadline만 설정.
                    - 상대적 시간(내일, 다음주, 오늘 오후 등)은 
                      현재 시각({current_time_str} - 한국 시간 기준)을 기준으로 절대 시간으로 계산해.
-                """},
-                {"type": "image_url", "image_url": image_url, "current_time_str": current_time_str}
+                """,
+                },
+                {
+                    "type": "image_url",
+                    "image_url": image_url,
+                    "current_time_str": current_time_str,
+                },
             ]
         )
 
