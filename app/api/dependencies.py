@@ -15,6 +15,7 @@ from app.domain.interfaces import (
     AIBrain,
     CacheRepository,
     ImageProcessor,
+    ScheduleRepository,
     TokenRepository,
     UserRepository,
     VectorRepository,
@@ -68,7 +69,7 @@ def get_ai_brain() -> AIBrain:
 
 
 @lru_cache
-def get_toekn_repository() -> TokenRepository:
+def get_token_repository() -> TokenRepository:
     return RedisTokenRepository()
 
 
@@ -82,7 +83,7 @@ def get_cache_repository() -> CacheRepository:
 # =================================================================
 def get_schedule_repository(
     db: AsyncSession = Depends(get_db),
-) -> SQLAlchemyScheduleRepository:
+) -> ScheduleRepository:
     return SQLAlchemyScheduleRepository(db)
 
 
@@ -100,9 +101,10 @@ def get_user_service(
 
 
 def get_auth_servcie(
-    token_repo: TokenRepository = Depends(get_toekn_repository),
+    token_repo: TokenRepository = Depends(get_token_repository),
+    user_repo: UserRepository = Depends(get_user_repository)
 ) -> AuthService:
-    return AuthService(token_repo)
+    return AuthService(token_repo, user_repo)
 
 
 def get_schedule_service(
@@ -129,7 +131,7 @@ oauth2_schema = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 async def get_current_user_id(
     token: str = Depends(oauth2_schema),
-    token_repo: TokenRepository = Depends(get_toekn_repository),
+    token_repo: TokenRepository = Depends(get_token_repository),
 ) -> UUID:
     """
     HTTP 요청 헤더(Authorization: Bearer <Token>)에서 토큰을 꺼내 검증하고

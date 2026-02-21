@@ -6,8 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.interfaces import ScheduleRepository
 from app.domain.schemas.schedule import ScheduleCreate
-from app.infrastructure.db.models import Schedule
-from app.infrastructure.db.models.schedule import ScheduleHistory
+from app.infrastructure.db.models.schedule import Schedule, ScheduleHistory
 
 
 class SQLAlchemyScheduleRepository(ScheduleRepository):

@@ -7,20 +7,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.exceptions import CredentialsException
 from app.core.security import create_access_token, create_refresh_token, verify_password
-from app.domain.interfaces import TokenRepository
+from app.domain.interfaces import TokenRepository, UserRepository
 from app.domain.schemas.token import Token
 from app.infrastructure.db.models.user import User
 
 
 class AuthService:
-    def __init__(self, token_repo: TokenRepository):
+    def __init__(self, token_repo: TokenRepository, user_repo: UserRepository):
         self.token_repo = token_repo
+        self.user_repo = user_repo
 
     async def authenticate_user(
-        self, db: AsyncSession, email: str, password: str
+        self, email: str, password: str
     ) -> User:
-        result = await db.execute(select(User).where(User.email == email))
-        user = result.scalars().first()
+        user = await self.user_repo.get_by_email(email)
 
         if not user or not verify_password(password, user.hashed_password):
             raise CredentialsException

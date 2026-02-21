@@ -3,11 +3,12 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.interfaces import UserRepository
 from app.domain.schemas.user import UserCreate
 from app.infrastructure.db.models.user import User
 
 
-class SQLAlchemyUserRepository:
+class SQLAlchemyUserRepository(UserRepository):
     """
     Protocol을 따르는 구현체
     """
