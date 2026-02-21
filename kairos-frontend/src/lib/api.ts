@@ -1,6 +1,7 @@
 import axios from "axios";
 import { get } from 'svelte/store';
-import { auth } from '$lib/stores/auth';
+import { auth, logout } from '$lib/stores/auth';
+import { goto } from "$app/navigation";
 import type { Schedule, ScheduleCreate, ChatResponse} from '$lib/types';
 
 
@@ -21,6 +22,18 @@ client.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// Access token 만료에 따른 재발급을 위한 로그인 화면 처리
+client.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response?.status === 401) {
+            logout();
+            goto('/login');
+        }
+        return Promise.reject(error);
+    }
+)
 
 // [임시] 개발용 Mock 유저 ID
 const TEST_USER_ID = "00000000-0000-0000-0000-000000000001";

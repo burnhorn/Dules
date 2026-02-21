@@ -20,6 +20,7 @@ export const auth = writable<AuthState>(initialData);
 
 if (browser) {
     auth.subscribe( (value ) => {
+        // isAuthenticated: false의 초기값을 이용하여 로그아웃 상태 보장
         if (value.isAuthenticated) {
             localStorage.setItem('auth', JSON.stringify(value));
         } else {
