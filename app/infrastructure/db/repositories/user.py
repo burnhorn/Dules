@@ -2,6 +2,7 @@ from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.domain.interfaces import UserRepository
 from app.domain.schemas.user import UserCreate
@@ -16,11 +17,14 @@ class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str, load_schedules: bool = False) -> Optional[User]:
         """
         이메일로 유저 조회 (중복 검사용)
         """
         query = select(User).where(User.email == email)
+        if load_schedules:
+            query = query.options(selectinload(User.schedules))
+
         result = await self.db.execute(query)
         return result.scalars().first()
 

@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.domain.interfaces import ScheduleRepository
 from app.domain.schemas.schedule import ScheduleCreate
@@ -24,7 +25,12 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
         return db_schedule
 
     async def get_by_id(self, schedule_id: UUID) -> Optional[Schedule]:
-        query = select(Schedule).where(Schedule.id == schedule_id)
+        query = (
+            select(Schedule)
+            .where(Schedule.id == schedule_id)
+            .options(joinedload(Schedule.user)) 
+            .options(selectinload(Schedule.histories)) 
+        )
         result = await self.db.execute(query)
         return result.scalars().first()
 
