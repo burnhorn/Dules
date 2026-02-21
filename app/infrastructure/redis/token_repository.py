@@ -13,10 +13,10 @@ class RedisTokenRepository(TokenRepository):
             settings.REDIS_URL, encoding="utf-8", decode_responses=True
         )
 
-    async def add_to_blacklist(self, token: str, expries_in: int) -> None:
+    async def add_to_blacklist(self, token: str, expires_in: int) -> None:
         key = f"blacklist:{token}"
 
-        await self.redis.setex(key, expries_in, "logged_out")
+        await self.redis.setex(key, expires_in, "logged_out")
 
     async def is_blacklisted(self, token: str) -> bool:
         key = f"blacklist:{token}"

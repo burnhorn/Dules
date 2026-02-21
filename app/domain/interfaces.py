@@ -94,7 +94,7 @@ class TokenRepository(Protocol):
     (Redis 구현체 교체용)
     """
 
-    async def add_to_blacklist(self, token: str, expries_in: int) -> None:
+    async def add_to_blacklist(self, token: str, expires_in: int) -> None:
         """
         토큰을 블랙리스트에 추가합니다.
         :param token: 차단할 토큰 문자열
