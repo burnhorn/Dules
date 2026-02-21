@@ -1,3 +1,23 @@
-# 불필요한 파일
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.env
+.env.local
+docker-compose.yml
+Dockerfile
+
+# VSCode settings
+.vscode/
+
+# etc
 agent.md
 /RoadMap
+/RoadMap2
+/RoadMap3
+/RoadMap4
+/kairos-admin
+test_gemini.py
