@@ -1,7 +1,6 @@
 import logging
 import sys
 import structlog
-from typing import Any
 
 def setup_logging(json_logs: bool = True, log_level: str = "INFO"):
     """

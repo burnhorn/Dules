@@ -16,6 +16,6 @@ async def chat_with_ai(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """
-    사용자의 질문을 받아 과거 일정(Vecotr DB)를 검색한 뒤 답변합니다.
+    사용자의 질문을 받아 과거 일정(Vecotr DB)를 검색한 뒤 답변
     """
     return await service.chat(user_id, request)

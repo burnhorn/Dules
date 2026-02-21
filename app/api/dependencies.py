@@ -8,11 +8,13 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.exceptions import CredentialsException, KairosException
+from app.core.exceptions import CredentialsException, DuelsException
 
+# =================================================================
 # Interface
+# =================================================================
 from app.domain.interfaces import (
-    AIBrain,
+    Llm,
     CacheRepository,
     ImageProcessor,
     ScheduleRepository,
@@ -23,18 +25,22 @@ from app.domain.interfaces import (
 from app.domain.schemas.token import TokenData
 from app.domain.schemas.user import UserRole
 
+# =================================================================
 # Implementations
+# =================================================================
 from app.infrastructure.db.session import SessionLocal
 from app.infrastructure.redis.cache_repository import RedisCacheRepository
 from app.infrastructure.redis.token_repository import RedisTokenRepository
 
-from app.infrastructure.ai.brain import GeminiBrain
+from app.infrastructure.ai.llm import GeminiLlm
 from app.infrastructure.ai.image_processor import GeminiImageProcessor
 from app.infrastructure.ai.vector_repository import PGVectorRepository
 from app.infrastructure.db.repositories.schedule import SQLAlchemyScheduleRepository
 from app.infrastructure.db.repositories.user import SQLAlchemyUserRepository
 
+# =================================================================
 # Services
+# =================================================================
 from app.services.chat_service import ChatService
 from app.services.schedule_service import ScheduleService
 from app.services.auth_service import AuthService
@@ -64,8 +70,8 @@ def get_image_processor() -> ImageProcessor:
 
 
 @lru_cache
-def get_ai_brain() -> AIBrain:
-    return GeminiBrain()
+def get_ai_llm() -> Llm:
+    return GeminiLlm()
 
 
 @lru_cache
@@ -118,9 +124,9 @@ def get_schedule_service(
 
 def get_chat_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
-    brain: AIBrain = Depends(get_ai_brain),
+    llm: Llm = Depends(get_ai_llm),
 ) -> ChatService:
-    return ChatService(vector_repo, brain)
+    return ChatService(vector_repo, llm)
 
 
 # =================================================================
@@ -175,7 +181,7 @@ class RoleChecker:
                 raise CredentialsException()
 
             if role_str not in [r.value for r in self.allowed_roles]:
-                raise KairosException(
+                raise DuelsException(
                     message="권한이 부족합니다.",
                     code="PERMISSION-DENIED",
                     status_code=403,

@@ -61,7 +61,7 @@
         <div class="bg-white rounded-lg shadow-2xl w-80 sm:w-96 flex flex-col border border-gray-200" style="height:500px;">
             <!--헤더-->
             <div class="bg-indigo-600 text-white p-4 rounded-t-lg flex justify-between items-center">
-                <h3 class="font-bold">Kairos AI</h3>
+                <h3 class="font-bold">Dules AI</h3>
                 <button onclick={() => isOpen = false} class="text-white hover:text-gray-200">X</button>
             </div>
 

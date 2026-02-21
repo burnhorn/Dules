@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
     get_auth_servcie,
-    get_db,
     get_user_service,
     oauth2_schema,
 )
@@ -35,7 +34,7 @@ async def refresh_token(
     auth_service: AuthService = Depends(get_auth_servcie),
 ):
     """
-    Refresh Token을 이용하여 새로운 Access Token을 발급 받습니다.
+    Refresh Token을 이용하여 새로운 Access Token을 발급
     """
     return await auth_service.refresh_access_token(refresh_token)
 
@@ -57,7 +56,7 @@ async def logout(
     auth_service: AuthService = Depends(get_auth_servcie),
 ):
     """
-    현재 사용 중인 엑세스 토큰을 만료 시킵니다.
+    현재 사용 중인 엑세스 토큰을 만료
     """
     await auth_service.logout(access_token, refresh_token)
     return {"message": "로그아웃 되었습니다."}

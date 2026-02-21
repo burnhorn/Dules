@@ -7,7 +7,7 @@ from uuid import UUID
 import pytz
 from fastapi import BackgroundTasks
 
-from app.core.exceptions import KairosException, ResourceNotFoundException
+from app.core.exceptions import DuelsException, ResourceNotFoundException
 from app.domain.interfaces import (
     CacheRepository,
     ImageProcessor,
@@ -22,7 +22,7 @@ logger = structlog.get_logger()
 
 class ScheduleService:
     """
-    일정 로직의 순서와 규칙(트랜잭션)을 보장
+    비즈니스 로직(순서 및 트랜잭션)
     - 캐시 기능 추가
     """
 
@@ -41,16 +41,12 @@ class ScheduleService:
     async def create_schedule(
         self, data: ScheduleCreate, user_id: UUID, background_taks: BackgroundTasks
     ) -> ScheduleResponse:
-        # 캐시 삭제
+
         await self._invalidate_cache(user_id)
 
-        # DB 객체 생성 및 세션 등록 (Insert 준비)
+        # RDB 저장
         created_schedule = await self.repo.create(data, user_id)
-
-        # 트랜젝션 확정 / (다른 로직 수행 가능)
         await self.repo.commit()
-
-        # 갱신된 DB 값 가져오기
         await self.repo.refresh(created_schedule)
 
         # 백터 DB 저장
@@ -62,7 +58,6 @@ class ScheduleService:
             schedule_id=str(created_schedule.id),
         )
 
-        # 응답 반환 (ORM 객체 -> Pydantic Schema)
         return ScheduleResponse.model_validate(created_schedule)
 
     async def get_schedules(self, user_id: UUID) -> List[ScheduleResponse]:
@@ -103,7 +98,6 @@ class ScheduleService:
         user_id: UUID,
         background_tasks: BackgroundTasks,
     ) -> ScheduleResponse:
-        # 캐시 삭제
         await self._invalidate_cache(user_id)
 
         # 기존 일정 조회 (없으면 404)
@@ -113,13 +107,13 @@ class ScheduleService:
 
         # 보안요소: 내 일정이 맞는지 확인
         if schedule.user_id != user_id:
-            raise KairosException(
+            raise DuelsException(
                 message="수정 권한이 없습니다.",
                 code="PERMISSION_DENIED",
                 status_code=403,
             )
 
-        # 이력(history) 기록 (변경 전 상태 스냅샷)
+        # 이력 기록 (변경 전 상태 스냅샷)
         history = ScheduleHistory(
             schedule_id=schedule.id,
             previous_title=schedule.title,
@@ -128,11 +122,10 @@ class ScheduleService:
         )
         await self.repo.create_history(history)
 
-        # 데이터 업데이트 (Pydantc -> ORM): 값이 있는 것만 추출
         update_dict = update_date.model_dump(exclude_unset=True)
 
         for key, value in update_dict.items():
-            setattr(schedule, key, value)  # 객체 속성 덮어쓰기
+            setattr(schedule, key, value)
 
         await self.repo.update(schedule)
 
@@ -155,7 +148,7 @@ class ScheduleService:
 
     async def search_schedules(self, query: str, user_id: UUID) -> List[str]:
         """
-        백터 DB에서 질문(query)과 유사한 일정 내용을 검색합니다.
+        백터 DB에서 질문(query)과 유사한 일정 내용을 검색
         """
         results = await self.vector_repo.search(query=query, user_id=user_id, limit=5)
 

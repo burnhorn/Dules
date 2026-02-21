@@ -22,14 +22,14 @@ class PGVectorRepository(VectorRepository):
             model=self.CURRENT_MODEL, google_api_key=settings.GOOGLE_API_KEY
         )
 
-        # 동기용 드라이버 사용 (psycopg)
-        # SQLAlchemy URL이 asyncpg로 되어 있다면 psycopg로 교체 로직
+        # [이슈] 동기용 드라이버 사용 (psycopg)
+        # SQLAlchemy URL의 asyncpg => psycopg 교체
         self.connection_string = settings.DATABASE_URL.replace(
             "postgresql+asyncpg", "postgresql+psycopg"
         )
 
         sanitized_model_name = self.CURRENT_MODEL.replace("/", "_").replace("-", "_")
-        self.collection_name = f"kairos_schedules_{sanitized_model_name}"
+        self.collection_name = f"dules_schedules_{sanitized_model_name}"
 
         # PGVector를 동기 모드로 초기화
         self.vector_store = PGVector(
@@ -72,7 +72,7 @@ class PGVectorRepository(VectorRepository):
 
         loop = asyncio.get_running_loop()
 
-        # 검색 또한 스레드 풀 위
+        # 검색 또한 스레드 풀
         results = await loop.run_in_executor(
             None,
             lambda: self.vector_store.similarity_search(

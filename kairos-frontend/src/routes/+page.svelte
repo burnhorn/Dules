@@ -51,7 +51,7 @@
 
 <main class="container mx-auto p-4 max-w-2xl pb-24">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Kairos Scheduler</h1>
+        <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Dules Scheduler</h1>
         
         <!-- 로그아웃 버튼-->
         <div class="flex gap-2">

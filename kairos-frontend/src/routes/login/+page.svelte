@@ -29,7 +29,7 @@
 
 <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 class="text-2xl font-bold mb-6 text-center text-indigo-600">Kairos 로그인</h1>
+        <h1 class="text-2xl font-bold mb-6 text-center text-indigo-600">Dules 로그인</h1>
 
         {#if error}
             <div class='bg-red-100 text-red-700 p-3 rounded mb-4 text-sm'>{error}</div>

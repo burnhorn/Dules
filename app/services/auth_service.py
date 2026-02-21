@@ -1,8 +1,6 @@
 from datetime import datetime, timezone
 
 from jose import JWTError, jwt
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import CredentialsException
@@ -31,7 +29,6 @@ class AuthService:
         access_token = create_access_token(subject=user.id, role=user.role.value)
         refresh_token = create_refresh_token(subject=user.id)
 
-        # Redis에 만료시간(초) 저장
         refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
         await self.token_repo.save_refresh_token(refresh_token, user.id, refresh_ttl)
 
@@ -52,7 +49,6 @@ class AuthService:
         except JWTError:
             raise CredentialsException()
 
-        # Refresh Token은 그대로, Access Token만 새로 발급
         new_access_token = create_access_token(subject=user_id_str)
 
         return Token(access_token=new_access_token, refresh_token=refresh_token)

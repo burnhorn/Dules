@@ -14,7 +14,6 @@ def create_access_token(
 ) -> str:
     """
     JWT Access Token 생성
-    :param subject: 토큰에 담을 식별자
     """
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta

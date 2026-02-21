@@ -20,8 +20,7 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
             **schedule_data.model_dump(exclude_unset=True), user_id=user_id
         )
         self.db.add(db_schedule)
-        # await self.db.commit()
-        # await self.db.refresh(db_schedule)
+
         return db_schedule
 
     async def get_by_id(self, schedule_id: UUID) -> Optional[Schedule]:
@@ -42,16 +41,15 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
         return result.scalars().all()
 
     async def create_history(self, history: ScheduleHistory):
-        self.db.add(history)  # Commit을 Service에서 처리
+        self.db.add(history)
 
     async def update(self, schedule: Schedule) -> Schedule:
         """
-        - 변경사항 감지 및 반영 준비
+        변경사항 반영 준비
         """
-        self.db.add(schedule)  # Commit은 Service에서 처리
+        self.db.add(schedule)
         return schedule
 
-    # 트랜잭션 마무리를 위한 헬퍼
     async def commit(self):
         await self.db.commit()
 

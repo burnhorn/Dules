@@ -26,31 +26,26 @@ class ScheduleBase(BaseModel):
     deadline: Optional[datetime] = None
 
 
-# 생성 요청 스키마
 class ScheduleCreate(ScheduleBase):
     @model_validator(mode="after")
     def check_constraints(self):
         """
         타입에 따른 필수 값 검증 로직
-        객체는 생성되는 순간부터 유효함이 보장됨
+        객체는 생성되는 순간부터 유효함 보장
         """
 
-        # Event
         if self.type == ScheduleType.EVENT:
             if not self.start_at or not self.end_at:
-                raise ValueError("이벤트(EVENT)는 시작 시간과 종료 시간이 필수입니다.")
+                raise ValueError("이벤트는 시작 시간과 종료 시간이 필수입니다.")
             if self.start_at >= self.end_at:
                 raise ValueError("종료 시간은 시작 시간보다 뒤여야 합니다.")
 
         if self.type == ScheduleType.TASK:
-            # if not self.deadline:
-            #     raise ValueError("할 일(TASK)은 마감일이 필수입니다.")
             pass
 
         return self
 
 
-# 조회 응답 스키마
 class ScheduleResponse(ScheduleBase):
     id: UUID
     user_id: UUID
@@ -60,11 +55,9 @@ class ScheduleResponse(ScheduleBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# 수정 스키마
 class ScheduleUpdate(BaseModel):
     """
-    일정 수정 요청 스키마
-    - 모든 필드는 Optional로 설정하여 변경할 값만 보냅니다.
+    모든 필드는 Optional로 설정하여 변경할 값 전달
     """
 
     title: Optional[str] = Field(

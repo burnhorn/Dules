@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_router
-from app.core.exceptions import KairosException
+from app.core.exceptions import DuelsException
 from app.core.logging import setup_logging
 from app.core.middleware import RequestLogMiddleware
 
@@ -15,7 +15,7 @@ setup_logging(json_logs=False, log_level="INFO")
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Kairos API",
+        title="Dules API",
         description="Context-Aware Scheduler Backend",
         version="0.3.0",
     )
@@ -35,8 +35,8 @@ def create_app() -> FastAPI:
     )
 
     # 비즈니스 로직 커스텀 예외 처리
-    @app.exception_handler(KairosException)
-    async def kairos_exception_handler(request: Request, exc: KairosException):
+    @app.exception_handler(DuelsException)
+    async def Dules_exception_handler(request: Request, exc: DuelsException):
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -82,7 +82,7 @@ def create_app() -> FastAPI:
     # 예상치 못한 서버 에러 처리 (500)
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
-        # 운영 환경에서는 Sentry 알림 변경
+        # 운영계에서는 Sentry 알림 변경
         print(f"[CRITICAL] Unhandled Exception: {exc}")
         return JSONResponse(
             status_code=500,

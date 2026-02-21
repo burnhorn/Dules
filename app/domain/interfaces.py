@@ -12,9 +12,6 @@ if TYPE_CHECKING:
 class ScheduleRepository(Protocol):
     """
     일정 관리를 위한 저장소 인터페이스
-    구체적인 DB 기술(SQLAlchemy 등)에 의존하지 않습니다.
-    - 입력: ScheduleCreate (데이터 덩어리)
-    - 출력: "Schedule" (저장된 실체)
     """
 
     async def create(self, schedule: "ScheduleCreate", user_id: UUID) -> "Schedule": ...
@@ -52,21 +49,21 @@ class VectorRepository(Protocol):
         ...
 
 
-class AIBrain(Protocol):
+class Llm(Protocol):
     """
     LLM과 통신을 담당하는 인터페이스
     """
 
     async def ask(self, question: str, context: str) -> str:
         """
-        주어진 맥락(context)를 바탕으로 질문(question)에 답변합니다.
+        주어진 맥락(context)를 바탕으로 질문에 답변
         """
         ...
 
 
 class ImageProcessor(Protocol):
     """
-    이미지 파일을 분석하여 일정 정보(ScheduleCreate)를 추출하는 인터페이스
+    이미지 파일을 분석하여 일정 정보를 추출하는 인터페이스
     """
 
     async def extract_schedule(
@@ -96,15 +93,13 @@ class TokenRepository(Protocol):
 
     async def add_to_blacklist(self, token: str, expires_in: int) -> None:
         """
-        토큰을 블랙리스트에 추가합니다.
-        :param token: 차단할 토큰 문자열
-        :param expires_in: 토큰의 남은 초(초과 시 자동 삭제)
+        토큰을 블랙리스트에 추가
         """
         ...
 
     async def is_blacklisted(self, token: str) -> bool:
         """
-        토큰이 블랙리스트에 있는지 확인합니다.
+        토큰이 블랙리스트에 있는지 확인
         """
         ...
 
@@ -148,13 +143,13 @@ class CacheRepository(Protocol):
 
     async def set(self, key: str, value: str, ttl: int = 3600) -> None:
         """
-        캐시 저장 (1시간)
+        캐시 저장
         """
         ...
 
     async def delete(self, key: str) -> None:
         """
-        캐시 삭제(Invalidation 용)
+        캐시 삭제
         """
         ...
 

@@ -6,13 +6,11 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
-# 유저 역할 부여용
 class UserRole(str, Enum):
     USER = "USER"
     ADMIN = "ADMIN"
 
 
-# 공통 속성
 class UserBase(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=2, max_length=50)

@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 
-class KairosException(Exception):
+class DuelsException(Exception):
     """
     시스템 전반에서 발생하는 비즈니스 로직 예외의 부모 클래스
     """
@@ -20,14 +20,14 @@ class KairosException(Exception):
         super().__init__(message)
 
 
-class CredentialsException(KairosException):
+class CredentialsException(DuelsException):
     def __init__(self):
         super().__init__(
             message="자격 증명이 유효하지 않습니다.", code="AUTH_001", status_code=401
         )
 
 
-class ResourceNotFoundException(KairosException):
+class ResourceNotFoundException(DuelsException):
     def __init__(self, resource: str):
         super().__init__(
             message=f"요청하신 {resource}를 찾을 수 없습니다.",
@@ -36,7 +36,7 @@ class ResourceNotFoundException(KairosException):
         )
 
 
-class AIProcessingException(KairosException):
+class AIProcessingException(DuelsException):
     def __init__(self, details: str = None):
         super().__init__(
             message=f"AI 처리 중 오류가 발생했습니다. {details}",

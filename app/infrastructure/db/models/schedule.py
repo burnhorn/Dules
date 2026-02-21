@@ -24,7 +24,7 @@ class Schedule(Base):
     description = Column(Text, nullable=True)
     type = Column(SQLEnum(ScheduleType), nullable=False)  # 통합 테이블 전략
 
-    # 시간 정보 (Nullable로 두고 App Layer에서 제어)
+    # 시간 정보
     start_at = Column(DateTime(timezone=True), nullable=True)
     end_at = Column(DateTime(timezone=True), nullable=True)
     deadline = Column(DateTime(timezone=True), nullable=True)
@@ -33,7 +33,7 @@ class Schedule(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # 관계 정의 (User, History...)
+    # 관계 정의
     user = relationship("User", back_populates="schedules")
     histories = relationship(
         "ScheduleHistory", back_populates="schedule", cascade="all, delete-orphan"
@@ -42,10 +42,10 @@ class Schedule(Base):
 
 class ScheduleHistory(Base):
     """
-    일정 변경 이력을 저장하는 테이블 (AI 학습 데이터용 Context 제공)
+    일정 변경 이력을 저장하는 테이블
     """
-
     __tablename__ = "schedule_histories"
+    
     # 식별자 전략: UUID 사용 (보안성, 분산환경 고려)
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 

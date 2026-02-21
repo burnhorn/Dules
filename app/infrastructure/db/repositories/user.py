@@ -10,7 +10,7 @@ from app.infrastructure.db.models.user import User
 
 class SQLAlchemyUserRepository(UserRepository):
     """
-    Protocol을 따르는 구현체
+    User 테이블을 위한 구현체
     """
 
     def __init__(self, db: AsyncSession):
@@ -26,7 +26,7 @@ class SQLAlchemyUserRepository(UserRepository):
 
     async def create(self, user_create: UserCreate, hashed_password) -> User:
         """
-        ORM 객체 생성의 책임 부여
+        ORM 객체 생성
         """
         db_user = User(
             email=user_create.email,
