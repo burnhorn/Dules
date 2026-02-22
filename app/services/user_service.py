@@ -1,5 +1,5 @@
 # from app.infrastructure.db.repositories.user import UserRepository
-from app.core.exceptions import DuelsException
+from app.core.exceptions import DulesException
 from app.core.security import get_password_hash
 from app.domain.interfaces import UserRepository
 from app.domain.schemas.user import UserCreate, UserResponse
@@ -12,7 +12,7 @@ class UserService:
     async def create_user(self, user_in: UserCreate) -> UserResponse:
         existing_user = await self.repo.get_by_email(user_in.email)
         if existing_user:
-            raise DuelsException(
+            raise DulesException(
                 message="이미 등록된 이메일입니다.",
                 code="EMAIL_DUPLICATED",
                 status_code=400,

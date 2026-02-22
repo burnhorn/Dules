@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 
-class DuelsException(Exception):
+class DulesException(Exception):
     """
     시스템 전반에서 발생하는 비즈니스 로직 예외의 부모 클래스
     """
@@ -20,14 +20,14 @@ class DuelsException(Exception):
         super().__init__(message)
 
 
-class CredentialsException(DuelsException):
+class CredentialsException(DulesException):
     def __init__(self):
         super().__init__(
             message="자격 증명이 유효하지 않습니다.", code="AUTH_001", status_code=401
         )
 
 
-class ResourceNotFoundException(DuelsException):
+class ResourceNotFoundException(DulesException):
     def __init__(self, resource: str):
         super().__init__(
             message=f"요청하신 {resource}를 찾을 수 없습니다.",
@@ -36,7 +36,7 @@ class ResourceNotFoundException(DuelsException):
         )
 
 
-class AIProcessingException(DuelsException):
+class AIProcessingException(DulesException):
     def __init__(self, details: str = None):
         super().__init__(
             message=f"AI 처리 중 오류가 발생했습니다. {details}",

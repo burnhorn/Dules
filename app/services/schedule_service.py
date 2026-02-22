@@ -7,7 +7,7 @@ from uuid import UUID
 import pytz
 from fastapi import BackgroundTasks
 
-from app.core.exceptions import DuelsException, ResourceNotFoundException
+from app.core.exceptions import DulesException, ResourceNotFoundException
 from app.domain.interfaces import (
     CacheRepository,
     ImageProcessor,
@@ -107,7 +107,7 @@ class ScheduleService:
 
         # 보안요소: 내 일정이 맞는지 확인
         if schedule.user_id != user_id:
-            raise DuelsException(
+            raise DulesException(
                 message="수정 권한이 없습니다.",
                 code="PERMISSION_DENIED",
                 status_code=403,

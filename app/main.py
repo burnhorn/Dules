@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_router
-from app.core.exceptions import DuelsException
+from app.core.exceptions import DulesException
 from app.core.logging import setup_logging
 from app.core.middleware import RequestLogMiddleware
 
@@ -35,8 +35,8 @@ def create_app() -> FastAPI:
     )
 
     # 비즈니스 로직 커스텀 예외 처리
-    @app.exception_handler(DuelsException)
-    async def Dules_exception_handler(request: Request, exc: DuelsException):
+    @app.exception_handler(DulesException)
+    async def Dules_exception_handler(request: Request, exc: DulesException):
         return JSONResponse(
             status_code=exc.status_code,
             content={

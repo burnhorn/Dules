@@ -8,7 +8,7 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.exceptions import CredentialsException, DuelsException
+from app.core.exceptions import CredentialsException, DulesException
 
 # =================================================================
 # Interface
@@ -181,7 +181,7 @@ class RoleChecker:
                 raise CredentialsException()
 
             if role_str not in [r.value for r in self.allowed_roles]:
-                raise DuelsException(
+                raise DulesException(
                     message="권한이 부족합니다.",
                     code="PERMISSION-DENIED",
                     status_code=403,
