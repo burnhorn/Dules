@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,14 @@ class SQLAlchemyUserRepository(UserRepository):
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def get_by_id(self, user_id: UUID) -> Optional[User]:
+        """
+        ID(UUID)로 유저 조회 (Refresh Token 검증 및 최신 권한 확인용)
+        """
+        query = select(User).where(User.id == user_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
 
     async def get_by_email(self, email: str, load_schedules: bool = False) -> Optional[User]:
         """

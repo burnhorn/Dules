@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import UUID
 
 from jose import JWTError, jwt
 
@@ -35,21 +36,37 @@ class AuthService:
         return Token(access_token=access_token, refresh_token=refresh_token)
 
     async def refresh_access_token(self, refresh_token: str) -> Token:
-        user_id_str = await self.token_repo.get_refresh_token_user_id(refresh_token)
-
-        if not user_id_str:
-            raise CredentialsException()
-
+        # JWT 서명 및 구조 검증
         try:
             payload = jwt.decode(
                 refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
             )
             if payload.get("type") != "refresh":
                 raise CredentialsException()
+            
+            token_sub = payload.get("sub")
+            if not token_sub:
+                raise CredentialsException()
         except JWTError:
             raise CredentialsException()
+        
+        # Redis 상태 검증
+        user_id_str = await self.token_repo.get_refresh_token_user_id(refresh_token)
+        if not user_id_str:
+            raise CredentialsException()
 
-        new_access_token = create_access_token(subject=user_id_str)
+        # 교차 검증
+        if token_sub != user_id_str:
+            raise CredentialsException()
+
+        # DB 검증
+        user = await self.user_repo.get_by_id(UUID(user_id_str))
+        if not user or not user.is_active:
+            raise CredentialsException()
+
+        new_access_token = create_access_token(
+            subject=str(user.id), 
+            role=user.role.value)
 
         return Token(access_token=new_access_token, refresh_token=refresh_token)
 
