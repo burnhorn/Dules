@@ -106,7 +106,7 @@ def get_user_service(
     return UserService(repo)
 
 
-def get_auth_servcie(
+def get_auth_service(
     token_repo: TokenRepository = Depends(get_token_repository),
     user_repo: UserRepository = Depends(get_user_repository)
 ) -> AuthService:
