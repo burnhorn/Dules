@@ -7,6 +7,7 @@ __pycache__/
 venv/
 .env
 .env.local
+.env.prod
 docker-compose.yml
 Dockerfile
 
@@ -21,3 +22,4 @@ agent.md
 /RoadMap4
 /kairos-admin
 test_gemini.py
+requirements.dev.txt
