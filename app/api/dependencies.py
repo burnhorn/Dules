@@ -158,7 +158,7 @@ async def get_current_user_id(
         token_data = TokenData(user_id=user_id_str)
 
     except JWTError:
-        raise ConnectionError()
+        raise CredentialsException()
 
     return UUID(token_data.user_id)
 
