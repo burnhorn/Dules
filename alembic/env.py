@@ -1,13 +1,14 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from app.core.config import settings
 from app.infrastructure.db.base import Base
+from app.infrastructure.db.models import User, Schedule, ScheduleHistory
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -80,10 +81,38 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
 
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+# def run_migrations_online() -> None:
+#     """Run migrations in 'online' mode."""
 
-    asyncio.run(run_async_migrations())
+#     asyncio.run(run_async_migrations())
+def run_migrations_online() -> None:
+    """
+    온라인 모드 마이그레이션 실행
+    """
+
+    # 메인 FastAPI 앱은 asyncpg + ssl=require 조합
+    # Alembic 마이그레이션을 돌릴 때만 psycopg2 + sslmode=require 조합
+    db_url = settings.DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
+    db_url = db_url.replace("ssl=require", "sslmode=require")
+
+    # Alembic 설정 객체에 치환한 URL 덮어쓰기
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = db_url
+
+    connectable = engine_from_config(
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection, 
+            target_metadata=target_metadata
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
 
 
 if context.is_offline_mode():

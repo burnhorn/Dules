@@ -24,8 +24,11 @@ class PGVectorRepository(VectorRepository):
 
         # [이슈] 동기용 드라이버 사용 (psycopg)
         # SQLAlchemy URL의 asyncpg => psycopg 교체
-        self.connection_string = settings.DATABASE_URL.replace(
-            "postgresql+asyncpg", "postgresql+psycopg"
+        # SSL 옵션 문자열 복구(ssl -> sslmode)
+        self.connection_string = (
+            settings.DATABASE_URL
+            .replace("postgresql+asyncpg", "postgresql+psycopg")
+            .replace("ssl=require", "sslmode=require")
         )
 
         sanitized_model_name = self.CURRENT_MODEL.replace("/", "_").replace("-", "_")
@@ -68,7 +71,7 @@ class PGVectorRepository(VectorRepository):
             logger.error("vector_save_failed", error=str(e))
 
     async def search(self, query: str, user_id: UUID, limit: int = 3) -> List[str]:
-        logger.info("[PGVector] 검색 요청", {query})
+        logger.info("[PGVector] 검색 요청", search_query=query)
 
         loop = asyncio.get_running_loop()
 
@@ -79,7 +82,7 @@ class PGVectorRepository(VectorRepository):
                 query, k=limit, filter={"user_id": str(user_id)}
             ),
         )
-        logger.info("[PGVector] 검색 완료", {len(results)})
+        logger.info("[PGVector] 검색 완료", result_count=len(results))
         return [doc.page_content for doc in results]
 
     async def delete(self, doc_id: str) -> None:
