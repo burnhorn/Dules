@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dules-web
+    command: gunicorn app.main:app -w 1 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 120
+    env_file:
+      - .env.prod
+    ports:
+      - "80:8000"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+        reservations:
+          memory: 200M
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dules-worker
+    command: celery -A app.core.celery_app worker --pool=solo --loglevel=info
+    env_file:
+      - .env.prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+        reservations:
+          memory: 200M
