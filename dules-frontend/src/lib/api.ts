@@ -3,11 +3,11 @@ import { get } from 'svelte/store';
 import { auth, logout } from '$lib/stores/auth';
 import { goto } from "$app/navigation";
 import type { Schedule, ScheduleCreate, ChatResponse} from '$lib/types';
-
+import { PUBLIC_API_URL } from '$env/static/public';
 
 // 설정 중앙 관리용
 const client = axios.create({
-    baseURL: 'http://localhost:8000/api/v1',
+    baseURL: `${PUBLIC_API_URL}/api/v1`,
     headers: {
         'Content-Type': 'application/json'
     },
@@ -58,7 +58,7 @@ export const scheduleApi = {
 
         const response = await client.post<Schedule>('/schedules/image', formData, {
             headers: {
-                'content-Type': 'multipart/form-data',
+                'Content-Type': 'multipart/form-data',
             },
         });
         return response.data;
