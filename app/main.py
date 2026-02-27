@@ -22,6 +22,7 @@ def create_app() -> FastAPI:
 
     origins = [
         "http://localhost:5173",
+        "dules.jing-bruteforce.workers.dev",
     ]
     
     app.add_middleware(RequestLogMiddleware)
