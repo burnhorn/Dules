@@ -4,12 +4,14 @@ import { browser } from '$app/environment';
 interface AuthState {
     isAuthenticated: boolean;
     token: string | null;
+    refreshToken: string | null;
     userEmail: string | null;
 }
 
 const initialState: AuthState = {
     isAuthenticated: false,
     token: null,
+    refreshToken: null,
     userEmail: null
 };
 
@@ -30,10 +32,11 @@ if (browser) {
 }
 
 
-export const login = (token: string, email: string ) => {
+export const login = (token: string, refreshToken: string, email: string ) => {
     auth.set({
         isAuthenticated: true,
         token,
+        refreshToken: refreshToken,
         userEmail: email
     });
 };

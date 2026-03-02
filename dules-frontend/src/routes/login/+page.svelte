@@ -17,7 +17,7 @@
             const data = await authApi.login(formData);
 
             // 토큰 저장
-            login(data.access_token, email);
+            login(data.access_token, data.refresh_token, email);
 
             goto('/');
         } catch (e: any) {

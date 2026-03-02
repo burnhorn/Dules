@@ -1,6 +1,6 @@
 import axios from "axios";
 import { get } from 'svelte/store';
-import { auth, logout } from '$lib/stores/auth';
+import { auth, login, logout } from '$lib/stores/auth';
 import { goto } from "$app/navigation";
 import type { Schedule, ScheduleCreate, ChatResponse} from '$lib/types';
 import { PUBLIC_API_URL } from '$env/static/public';
@@ -26,14 +26,40 @@ client.interceptors.request.use((config) => {
 // Access token 만료에 따른 재발급을 위한 로그인 화면 처리
 client.interceptors.response.use(
     response => response,
-    error => {
-        if (error.response?.status === 401) {
-            logout();
-            goto('/login');
+    async error => {
+        const originalRequest = error.config;
+
+        if (error.response?.status == 401 && !originalRequest._retry){
+            originalRequest._retry = true;
+
+            try {
+                const state = get(auth);
+                const refreshToken = state.refreshToken;
+
+                if (!refreshToken) {
+                    throw new Error("Refresh Token 없음")
+                }
+
+                const { data } = await axios.post(`${PUBLIC_API_URL}/api/v1/auth/refresh`, {
+                    refresh_token: refreshToken
+                });
+
+                login(data.access_token, data.refresh_token, state.userEmail || "")
+
+                originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+
+                return client(originalRequest)
+            } catch (refreshError) {
+                console.error("토큰 갱신 실패", refreshError);
+                logout();
+                goto('/login');
+                return Promise.reject(refreshError)
+            }
         }
+
         return Promise.reject(error);
     }
-)
+);
 
 // [임시] 개발용 Mock 유저 ID
 const TEST_USER_ID = "00000000-0000-0000-0000-000000000001";
