@@ -22,7 +22,8 @@ def create_app() -> FastAPI:
 
     origins = [
         "http://localhost:5173",
-        "dules.jing-bruteforce.workers.dev",
+        "https://openschedule.store",
+        "https://www.openschedule.store"
     ]
     
     app.add_middleware(RequestLogMiddleware)
