@@ -34,3 +34,9 @@ services:
           memory: 400M
         reservations:
           memory: 200M
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: tunnel run --token <여기에_복사한_토큰_붙여넣기>
+    networks:
+      - default

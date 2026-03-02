@@ -8,8 +8,6 @@ venv/
 .env
 .env.local
 .env.prod
-docker-compose.yml
-Dockerfile
 
 # VSCode settings
 .vscode/
@@ -20,6 +18,7 @@ agent.md
 /RoadMap2
 /RoadMap3
 /RoadMap4
+/kairos-frontend/
 /kairos-admin
 test_gemini.py
 requirements.dev.txt
