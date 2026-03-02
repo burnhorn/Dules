@@ -26,7 +26,11 @@
     async function loadSchedules() {
         loading = true;
         try {
-            schedules = await scheduleApi.getAll();
+            const data = await scheduleApi.getAll();
+
+            schedules = data.map(item => ({
+                ...item, createdAtTime: new Date(item.created_at).getTime()
+            })).sort((a, b) => b.createdAtTime - a.createdAtTime);
         } catch (e) {
             error = '데이터를 불러오는데 실패했습니다.';
             console.error(e);
