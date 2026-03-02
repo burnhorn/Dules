@@ -60,6 +60,23 @@ class ScheduleService:
 
         return ScheduleResponse.model_validate(created_schedule)
 
+    async def delete_schedule(self, schedule_id: UUID, user_id: UUID) -> None:
+        await self._invalidate_cache(user_id)
+
+        schedule = await self.repo.get_by_id(schedule_id)
+        if not schedule:
+            raise ResourceNotFoundException(resource="일정")
+        
+        if schedule.user_id != user_id:
+            raise DulesException(
+                message="삭제 권한이 없습니다.",
+                code="PERMISSION_DENIED",
+                status_code=403
+            )
+        
+        await self.repo.delete(schedule)
+        await self.repo.commit()
+
     async def get_schedules(self, user_id: UUID) -> List[ScheduleResponse]:
         cache_key = f"schedules:user:{user_id}"
 

@@ -56,6 +56,9 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
         self.db.add(schedule)
         return schedule
 
+    async def delete(self, schedule: Schedule) -> None:
+        await self.db.delete(schedule)
+
     async def commit(self):
         await self.db.commit()
 

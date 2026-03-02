@@ -27,6 +27,15 @@ async def create_schedule(
     """
     return await service.create_schedule(schedule_in, user_id, background_tasks)
 
+@router.delete("/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT, summary="일정 삭제")
+async def delete_schedule(
+    schedule_id: UUID,
+    service: ScheduleService = Depends(get_schedule_service),
+    user_id: UUID = Depends(get_current_user_id),
+):
+    """특정 일정을 삭제합니다."""
+    await service.delete_schedule(schedule_id, user_id)
+    return
 
 @router.get("/", response_model=List[ScheduleResponse], summary="내 일정 목록 조회")
 async def read_schedules(
