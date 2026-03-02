@@ -16,6 +16,8 @@
     let error = $state('');
     let isFormOpen = $state(false);
 
+    let selectedSchedule = $state<Schedule | null>(null);
+
     // 데이터 로딩 함수
     async function loadSchedules() {
         loading = true;
@@ -47,6 +49,16 @@
         }
     }
 
+    async function openEditModal(schedule: Schedule) {
+        selectedSchedule = schedule;
+        isFormOpen = true
+    }
+
+    async function openCreateModal() {
+        selectedSchedule = null;
+        isFormOpen = true
+    }
+
 </script>
 
 <main class="container mx-auto p-4 max-w-2xl pb-24">
@@ -65,7 +77,7 @@
 
         <!-- 수동 추가 버튼-->
         <button
-            onclick={() => isFormOpen = true}
+            onclick={openCreateModal}
             class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 font-semibold"
         >
         ➕ 직접 추가
@@ -81,7 +93,14 @@
     {:else}
         <div class="space-y-4">
             {#each schedules as schedule}
-                <div class="border rounded-lg p-4 shadow-sm hover:shadow-md transition bg-white">
+                <div class="relative border rounded-lg p-4 shadow-sm hover:shadow-md transition bg-white">
+                    <button
+                        onclick={() => openEditModal(schedule)}
+                        class="absolute top-10 right-4 text-gray-400 hover:text-indigo-600"
+                        title="수정">
+                        ✎
+                    </button>
+
                     <div class="flex justify-between items-start">
                         <h2 class="text-xl font-semibold">{schedule.title}</h2>
                         <span class={`px-2 py-1 text-xs rounded ${schedule.type === 'EVENT' ? 'bg-blue-100 text-blue-800': 'bg-green-100 text-green-800'}`}>{schedule.type}
@@ -114,6 +133,7 @@
         <ScheduleForm
             onclose={() => isFormOpen = false}
             onsuccess={loadSchedules}
+            scheduleToEdit={selectedSchedule}
         />
     {/if}
     

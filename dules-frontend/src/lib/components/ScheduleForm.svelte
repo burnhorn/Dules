@@ -1,18 +1,28 @@
 <script lang="ts">
     import { scheduleApi } from "$lib/api";
-    import type { ScheduleCreate, ScheduleType } from "$lib/types";
+    import type { ScheduleCreate, ScheduleType, Schedule } from "$lib/types";
 
-    let { onclose, onsuccess } = $props<{
+    let { onclose, onsuccess, scheduleToEdit = null } = $props<{
         onclose: () => void,
-        onsuccess: () => void
+        onsuccess: () => void,
+        scheduleToEdit?: Schedule | null // 수정 모드와 생성 모드 구분값
     }>();
 
-    let title = $state('');
-    let description = $state('');
-    let type = $state<ScheduleType>('TASK');
-    let startAt = $state('');
-    let endAt = $state('');
-    let deadline = $state('');
+    let title = $derived(scheduleToEdit?.title ?? '');
+    let description = $derived(scheduleToEdit?.description ??'');
+    let type = $derived<ScheduleType>(scheduleToEdit?.type ?? 'TASK');
+    
+    function formatDateForInput(isoString: string | null | undefined) {
+        if (!isoString) return '';
+        const date = new Date(isoString);
+        const kstDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return kstDate.toISOString().slice(0, 16);
+    }
+
+    let startAt = $derived(formatDateForInput(scheduleToEdit?.start_at));
+    let endAt = $derived(formatDateForInput(scheduleToEdit?.end_at));
+    let deadline = $derived(formatDateForInput(scheduleToEdit?.deadline));
+
     let isSubmitting = $state(false);
 
     async function handleSubmit(e: SubmitEvent) {
@@ -29,12 +39,18 @@
                 deadline: type === 'TASK' && deadline ? new Date(deadline).toISOString() : undefined
             };
 
-            await scheduleApi.create(payload);
-            alert('일정이 등록되었습니다.')
+            if (scheduleToEdit) {
+                await scheduleApi.update(scheduleToEdit.id, payload);
+                alert('일정이 수정되었습니다.');
+            } else {
+                await scheduleApi.create(payload as ScheduleCreate);
+                alert('일정이 등록되었습니다.')
+            }
+
             onsuccess();
             onclose();
         } catch (error) {
-            alert('등록 실패');
+            alert(scheduleToEdit? '수정 실패' : '등록 실패');
             console.error(error);
         } finally {
             isSubmitting = false;
@@ -45,7 +61,9 @@
 <!-- 모달 배경 -->
  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h2 class="text-xl font-bold mb-4">새 일정 추가</h2>
+        <h2 class="text-xl font-bold mb-4">
+            {scheduleToEdit ? '일정 수정': '새 일정 추가'}
+        </h2>
 
         <form onsubmit={handleSubmit} class="space-y-4">
             <div>

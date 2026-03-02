@@ -70,6 +70,12 @@ export const scheduleApi = {
             params: { query }
         });
         return response.data;
+    },
+
+    // 일정 수정
+    update: async (id: string, data: Partial<ScheduleCreate>) : Promise<Schedule> => {
+        const response = await client.patch<Schedule>(`/schedules/${id}`, data);
+        return response.data;
     }
 }
 
