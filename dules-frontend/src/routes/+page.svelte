@@ -46,6 +46,20 @@
         loadSchedules();
     })
 
+    
+    async function handleDelete(id: string) {
+        if (!confirm('정말 이 일정을 삭제하시겠습니까?')) return;
+
+        try {
+            await scheduleApi.delete(id);
+            alert('삭제되었습니다.');
+            loadSchedules();
+        } catch (e) {
+            console.error(e);
+            alert('삭제에 실패했습니다.');
+        }
+    }
+
     async function handleLogout() {
         try {
             await authApi.logout(); // Redis에 블랙리스트 등록
@@ -172,9 +186,17 @@
                     <div class="relative border rounded-lg p-4 shadow-sm hover:shadow-md transition bg-white">
                         <button
                             onclick={() => openEditModal(schedule)}
-                            class="absolute top-10 right-4 text-gray-400 hover:text-indigo-600"
+                            class="absolute top-10 right-12 text-gray-400 hover:text-indigo-600"
                             title="수정">
                             ✎
+                        </button>
+
+                        <button
+                            onclick={() => handleDelete(schedule.id)}
+                            class="absolute top-10 right-4 text-gray-400 hover:text-red-600"
+                            title="삭제"
+                        >
+                            🗑️
                         </button>
 
                         <div class="flex justify-between items-start">

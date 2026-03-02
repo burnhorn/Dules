@@ -102,6 +102,11 @@ export const scheduleApi = {
     update: async (id: string, data: Partial<ScheduleCreate>) : Promise<Schedule> => {
         const response = await client.patch<Schedule>(`/schedules/${id}`, data);
         return response.data;
+    },
+
+    // 일정 삭제
+    delete: async (id: string): Promise<void> => {
+        await client.delete(`/schedules/${id}`)
     }
 }
 
