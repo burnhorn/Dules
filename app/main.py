@@ -4,11 +4,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import sentry_sdk
 
 from app.api.v1.router import api_router
 from app.core.exceptions import DulesException
 from app.core.logging import setup_logging
 from app.core.middleware import RequestLogMiddleware
+from app.core.config import settings
 
 # json_logs값: 개발계 - False, 운영계 - False
 setup_logging(json_logs=False, log_level="INFO")
@@ -99,6 +101,12 @@ def create_app() -> FastAPI:
 
     return app
 
+sentry_sdk.init(
+    dsn=settings.SENTRY_SDK_DSN,
+    traces_sample_rate=1.0,
+    profiles_sample_rate=1.0,
+    send_default_pii=True,
+)
 
 app = create_app()
 

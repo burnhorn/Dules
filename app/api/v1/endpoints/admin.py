@@ -12,3 +12,11 @@ async def get_system_stats():
         "server_status": "healthy",
         "message": "환영합니다. 관리자님.",
     }
+
+@router.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+@router.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0

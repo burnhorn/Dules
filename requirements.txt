@@ -31,3 +31,4 @@ email-validator
 structlog==25.5.0
 tenacity==9.1.2
 pytz==2025.2
+sentry-sdk

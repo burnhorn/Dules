@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     REDIS_URL: str
     GOOGLE_API_KEY: str
     GOOGLE_EMBEDDINGS_MODEL: str
-
+    SENTRY_SDK_DSN: str
+    
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
