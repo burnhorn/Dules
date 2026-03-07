@@ -20,7 +20,6 @@
             const result = await scheduleApi.uploadImage(file);
             alert(`일정이 등록되었습니다: ${result.title}`);
             
-            // 존재할 때만 실행
             onuploaded?.();
 
             if (fileInput) fileInput.value = '';

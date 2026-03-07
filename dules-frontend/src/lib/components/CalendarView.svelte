@@ -5,7 +5,6 @@
     import interactionPlugin from '@fullcalendar/interaction';
     import type { Schedule } from "$lib/types";
 
-    // 상위에서 전달한 schedules와 onEventclick의 값을  하부 컴포넌트에서 받기??
     let { schedules, onEventClick } = $props<{
         schedules: Schedule[],
         onEventClick: (schedule: Schedule) => void

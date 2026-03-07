@@ -77,9 +77,20 @@
 <!-- 모달 배경 -->
  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h2 class="text-xl font-bold mb-4">
-            {scheduleToEdit ? '일정 수정': '새 일정 추가'}
+        <h2 class="text-xl font-bold mb-4 flex justify-between items-center">
+            <span>{scheduleToEdit ? '일정 수정': '새 일정 추가'}</span>
+
+            {#if scheduleToEdit}
+                <button 
+                    type="button"
+                    onclick={handleDelete}
+                    class="px-4 py-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                    삭제
+                </button>
+            {/if}
         </h2>
+        
 
         <form onsubmit={handleSubmit} class="space-y-4">
             <div>
@@ -144,17 +155,7 @@
                 </div>
             {/if}
 
-            <div>
-                {#if scheduleToEdit}
-                    <button 
-                        type="button"
-                        onclick={handleDelete}
-                        class="px-4 py-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
-                    >
-                        삭제
-                    </button>
-                {/if}
-            </div>
+
 
             <div class="flex justify-end gap-2 mt-6">
                 <button
