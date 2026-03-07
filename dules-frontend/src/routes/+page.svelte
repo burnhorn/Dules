@@ -9,41 +9,21 @@
     import ScheduleForm from "$lib/components/ScheduleForm.svelte";
 	import CalendarView from "$lib/components/CalendarView.svelte";
 
-    let schedules = $state<Schedule[]>([]);
-    let loading = $state(true);
-    let error = $state('');
+    import { scheduleStore } from "$lib/stores/schedule.svelte";
+    
     let isFormOpen = $state(false);
     let selectedSchedule = $state<Schedule | null>(null);
-    
     let searchQuery = $state('');
     let searchResults = $state<string[]>([]);
     let isSearchMode = $state(false);
     let isSearching = $state(false);
     
-    async function loadSchedules() {
-        loading = true;
-        try {
-            const data = await scheduleApi.getAll();
-            
-            schedules = data.sort((a, b) => {
-                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-                return timeB - timeA;
-            });
-        } catch (e) {
-            error = '데이터를 불러오는데 실패했습니다.';
-            console.error(e);
-        } finally {
-            loading = false;
-        }
-    }
-
     onMount(() => {
         if (!$auth.isAuthenticated) {
             goto('/login');
             return; 
         }
-        loadSchedules();
+        scheduleStore.load();
     })
 
     async function handleLogout() {
@@ -181,19 +161,19 @@
                 {/if}
             </div>
 
-        {:else if loading}
+        {:else if scheduleStore.loading}
             <div class="text-center p-10 text-gray-400">로딩 중...</div>
 
-        {:else if error}
-            <div class="bg-red-50 text-red-600 p-4 rounded-lg text-sm">{error}</div>
+        {:else if scheduleStore.error}
+            <div class="bg-red-50 text-red-600 p-4 rounded-lg text-sm">{scheduleStore.error}</div>
 
         {:else}
             <div class="pb-20"> 
                 <CalendarView
-                    schedules={schedules}
+                    schedules={scheduleStore.schedules}
                     onEventClick={openEditModal}
                 />
-                {#if schedules.length === 0}
+                {#if scheduleStore.schedules.length === 0}
                     <div class="flex flex-col items-center justify-center py-20 text-gray-400">
                         <span class="text-4xl mb-2">📷</span>
                         <p class="text-sm">하단 카메라 버튼을 눌러<br>일정을 추가해보세요!</p>
@@ -205,7 +185,7 @@
         {#if isFormOpen}
             <ScheduleForm
                 onclose={() => isFormOpen = false}
-                onsuccess={loadSchedules}
+                onsuccess={() => scheduleStore.load()}
                 scheduleToEdit={selectedSchedule}
             />
         {/if}

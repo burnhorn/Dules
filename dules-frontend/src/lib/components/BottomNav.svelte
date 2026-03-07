@@ -1,10 +1,11 @@
 <script lang="ts">
     import { scheduleApi } from "$lib/api";
-    import { invalidateAll } from "$app/navigation";
+    import { scheduleStore } from "$lib/stores/schedule.svelte";
+    import type { Schedule } from "$lib/types";
 
     let isUploading = $state(false);
     let fileInput: HTMLInputElement | null = null;
-
+    
     async function handleFileSelect(event: Event) {
         const target = event.target as HTMLInputElement;
         if (target.files && target.files.length > 0) {
@@ -18,10 +19,14 @@
         isUploading = true;
 
         try {
-            const result = await scheduleApi.uploadImage(file);
-            alert(`[분석 완료]\n 일정: ${result.title}\n시간: ${new Date(result.start_at!).toLocaleString()}`);
+            const result: Schedule = await scheduleApi.uploadImage(file);
+            const time = result.start_at || result.deadline
 
-            await invalidateAll();
+            const timeText = time? new Date(time).toLocaleDateString() : "시간 정보 없음";
+
+            alert(`[분석 완료]\n일정: ${result.title}\n일시: ${timeText}`);
+
+            await scheduleStore.load();
         } catch (e) {
             alert("이미지 분석에 실패했습니다. 다시 시도해주세요.")
             console.error(e)
