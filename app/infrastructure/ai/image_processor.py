@@ -7,6 +7,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.domain.interfaces import ImageProcessor
+from app.domain.schemas.chat import AIImageResponse
 from app.domain.schemas.schedule import ScheduleCreate
 
 
@@ -27,7 +28,7 @@ class GeminiImageProcessor(ImageProcessor):
         reraise=True,
     )
     async def extract_schedule(
-        self, image_bytes: str, mime_type: str, reference_date: datetime
+        self, image_bytes: bytes, mime_type: str, reference_date: datetime
     ) -> ScheduleCreate:
         print("[Vision] 이미지 분석 시작...")
 
@@ -39,36 +40,74 @@ class GeminiImageProcessor(ImageProcessor):
             content=[
                 {
                     "type": "text",
-                    "text": """
-                이 이미지에서 일정 정보를 추출해줘.
+                    "text": f"""
+                        당신은 바쁜 금융권 직장인을 돕는 최고의 AI 비서입니다.
+                        사용자는 보안망 때문에 PC에서 일정을 옮기지 못해, 모니터 화면(엑셀/달력), 화이트보드, 수첩 메모를 스마트폰으로 대충 찍어서 업로드합니다.
+                        이 이미지에서 일정 정보를 추출해 주세요.
+
+                        현재 한국 기준 시각:
+                        {current_time_str} (KST)
+
+                        [시간 변환 규칙]
+                        - 오늘 → {current_time_str} 날짜
+                        - 내일 → +1일
+                        - 모레 → +2일
+                        - 오전/오후 시간을 정확한 24시간제로 변환
+                        - 모든 시간은 ISO8601 datetime 형식으로 반환
+                        - timezone은 KST 기준
+
+                        이미지에서 일정 정보를 추출하세요.
                 
-                [규칙]
-                1. title: 일정의 제목.
-                2. description: 장소나 준비물 등 상세 내용.
-                3. type: 
-                   - 시간이 명확하게(시작/종료) 적혀 있으면 'EVENT'
-                   - 날짜만 있거나 마감일만 있거나 시간이 명시되지 않았으면 'TASK'로 설정해. (매우 중요!)
-                4. start_at/end_at/deadline: YYYY-MM-DDTHH:MM:SS 형식.
-                   - 'EVENT'라면 start_at 필수. end_at 없으면 +1시간.
-                   - 'TASK'라면 deadline만 설정.
-                   - 상대적 시간(내일, 다음주, 오늘 오후 등)은 
-                     현재 시각({current_time_str} - 한국 시간 기준)을 기준으로 절대 시간으로 계산해.
+                    [분석 규칙]
+                    1. title: 일정의 핵심 제목.
+                    2. type: 
+                    - 시간이 명확하게(시작/종료) 적혀 있으면 'EVENT'
+                    - 날짜만 있거나 마감일만 있거나 시간이 없으면 'TASK'
+                    3. start_at/end_at/deadline: 
+                    - 상대적 시간(내일, 오늘 오후 등)은 위 시간 변환 규칙에 따라 계산하세요.
+                    
+                    [특별 임무]
+                    4. location: 장소가 보이면 추출하세요.
+                    5. preparations: 일정 성격을 파악해 필요한 준비물을 센스 있게 유추하세요. (예: 미팅 -> 명함/노트북)
+                    6. ai_comment: 직장인을 위한 실용적인 조언을 1~2문장으로 작성하세요.
                 """,
                 },
                 {
                     "type": "image_url",
                     "image_url": image_url,
-                    "current_time_str": current_time_str,
                 },
             ]
         )
 
-        structured_llm = self.llm.with_structured_output(ScheduleCreate)
+        structured_llm = self.llm.with_structured_output(AIImageResponse)
 
         try:
             result = await structured_llm.ainvoke([message])
             print(f"[Vision] 추출 성공: {result.title}")
-            return result
+
+            description_parts = []
+
+            if result.description:
+                description_parts.append(result.description)
+            if result.location:
+                description_parts.append(f"장소: {result.location}")
+            if result.preparations:
+                description_parts.append(f"준비물: {result.preparations}")
+            if result.comment:
+                description_parts.append(f"비서 조언: {result.comment}")
+            
+            final_description = "\n\n".join(description_parts)
+
+            final_schedule = ScheduleCreate(
+                title=result.title,
+                type=result.type,
+                start_at=result.start_at,
+                end_at=result.end_at,
+                deadline=result.deadline,
+                description=final_description
+            )
+
+            return final_schedule
 
         except Exception as e:
             raise ValueError(f"이미지 분석 중 오류 발생: {e}")
