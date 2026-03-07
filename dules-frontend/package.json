@@ -37,6 +37,9 @@
 		"vite": "^7.2.6"
 	},
 	"dependencies": {
+		"@fullcalendar/core": "^6.1.20",
+		"@fullcalendar/daygrid": "^6.1.20",
+		"@fullcalendar/interaction": "^6.1.20",
 		"axios": "^1.13.2"
 	}
 }

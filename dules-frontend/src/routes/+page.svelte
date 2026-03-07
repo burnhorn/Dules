@@ -1,15 +1,13 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { scheduleApi } from "$lib/api";
+    import { scheduleApi, authApi } from "$lib/api";
     import type { Schedule } from "$lib/types";
 
     import { auth, logout } from "$lib/stores/auth";
     import { goto } from "$app/navigation";
-    import { authApi } from "$lib/api";
 
     import ScheduleForm from "$lib/components/ScheduleForm.svelte";
-    import ChatInterface from "$lib/components/ChatInterface.svelte";
-    import ImageUpload from "$lib/components/ImageUpload.svelte";
+	import CalendarView from "$lib/components/CalendarView.svelte";
 
     let schedules = $state<Schedule[]>([]);
     let loading = $state(true);
@@ -19,18 +17,19 @@
     
     let searchQuery = $state('');
     let searchResults = $state<string[]>([]);
-    let isSearchMode = $state(false); // false면 전체 목록, true면 검색 결과 랜더링
+    let isSearchMode = $state(false);
     let isSearching = $state(false);
     
-    // 데이터 로딩 함수
     async function loadSchedules() {
         loading = true;
         try {
             const data = await scheduleApi.getAll();
-
-            schedules = data.map(item => ({
-                ...item, createdAtTime: new Date(item.created_at).getTime()
-            })).sort((a, b) => b.createdAtTime - a.createdAtTime);
+            
+            schedules = data.sort((a, b) => {
+                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return timeB - timeA;
+            });
         } catch (e) {
             error = '데이터를 불러오는데 실패했습니다.';
             console.error(e);
@@ -42,47 +41,35 @@
     onMount(() => {
         if (!$auth.isAuthenticated) {
             goto('/login');
+            return; 
         }
         loadSchedules();
     })
 
-    
-    async function handleDelete(id: string) {
-        if (!confirm('정말 이 일정을 삭제하시겠습니까?')) return;
-
-        try {
-            await scheduleApi.delete(id);
-            alert('삭제되었습니다.');
-            loadSchedules();
-        } catch (e) {
-            console.error(e);
-            alert('삭제에 실패했습니다.');
-        }
-    }
-
     async function handleLogout() {
         try {
-            await authApi.logout(); // Redis에 블랙리스트 등록
+            await authApi.logout(); 
         } catch (e) {
             console.error("로그아웃 요청 실패" , e)
         } finally {
-            logout(); // 클라이언트 스토어 비우기
+            logout();
             goto('/login');
         }
     }
 
-    async function openEditModal(schedule: Schedule) {
+    function openEditModal(schedule: Schedule) {
         selectedSchedule = schedule;
         isFormOpen = true
     }
 
-    async function openCreateModal() {
+    function openCreateModal() {
         selectedSchedule = null;
         isFormOpen = true
     }
 
-    async function handleSearch(e: Event) {
-        e.preventDefault();
+    async function handleSearch(e: SubmitEvent) {
+        e.preventDefault(); 
+        
         if (!searchQuery.trim()) return;
 
         isSearching = true
@@ -105,136 +92,122 @@
     }
 </script>
 
-<main class="container mx-auto p-4 max-w-2xl pb-24">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Dules Scheduler</h1>
+{#if $auth.isAuthenticated}
+    <div class="px-5 py-6 min-h-screen bg-white"> 
         
-        <!-- 로그아웃 버튼-->
-        <div class="flex gap-2">
-            <button 
-                onclick={handleLogout}
-                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold text-sm"
-            >
-            로그아웃
-            </button>
-        </div>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">나의 일정</h1>
+            
+            <div class="flex gap-2">
+                <button 
+                    onclick={openCreateModal}
+                    class="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                    aria-label="일정 직접 추가"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </button>
 
-        <!-- 수동 추가 버튼-->
-        <button
-            onclick={openCreateModal}
-            class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 font-semibold"
-        >
-        ➕ 직접 추가
-        </button>
-    </div>
-    
-    <div class="mb-8">
-        <form onsubmit={handleSearch} class="relative">
-            <input 
-                type="text"
-                bind:value={searchQuery}
-                placeholder="AI에게 물어보세요. (예: 이번 달에 놓치지 말아야 할 중요한 일은?)"
-                class="w-full border-2 border-indigo-100 rounded-full py-3 px-6 pr-24 focus:outline-none focus:border-indigo-500 shadow-sm transition-colors"
-            />
-            <button 
-                type="submit"
-                disabled={isSearching}
-                class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white rounded-full px-6 hover:bg-indigo-700 disabled:bg-gray-400 font-medium transition-colors"
-            >
-                {isSearching ? '🔍...': '검색'}
-            </button>
-        </form>
-    </div>
-
-    {#if !isSearchMode}
-        <ImageUpload onuploaded={loadSchedules} />
-    {/if}
-
-    {#if isSearchMode}
-        <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100 mb-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-indigo-800">벡터 검색 결과</h3>
-                <button onclick={closeSearch} class="text-sm text-gray-500 hover:text-gray-700 underline">
-                전체 목록으로 돌아가기
+                <button 
+                    onclick={handleLogout}
+                    class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                    aria-label="로그아웃"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                    </svg>
                 </button>
             </div>
-
-            {#if isSearching}
-                <div class="text-center py-8 text-gray-500">AI가 일정을 찾고 있습니다.</div>
-            {:else if searchResults.length > 0}
-                <ul class="space-y-3">
-                    {#each searchResults as result}
-                        <li class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 text-gray-700">
-                            {result}
-                        </li>
-                    {/each}
-                </ul>
-            {:else}
-                <div class="text-center py-8 text-gray-500">
-                관련된 내용을 찾지 못했습니다
-                </div>
-            {/if}
         </div>
-    {:else}
-        {#if loading}
-            <div class="text-center p-4">로딩 중...</div>
-        {:else if error}
-            <div class="bg-red-100 text-red-700 p4 rounded mb-4">{error}</div>
-        {:else}
-            <div class="space-y-4">
-                {#each schedules as schedule}
-                    <div class="relative border rounded-lg p-4 shadow-sm hover:shadow-md transition bg-white">
-                        <button
-                            onclick={() => openEditModal(schedule)}
-                            class="absolute top-10 right-12 text-gray-400 hover:text-indigo-600"
-                            title="수정">
-                            ✎
-                        </button>
-
-                        <button
-                            onclick={() => handleDelete(schedule.id)}
-                            class="absolute top-10 right-4 text-gray-400 hover:text-red-600"
-                            title="삭제"
-                        >
-                            🗑️
-                        </button>
-
-                        <div class="flex justify-between items-start">
-                            <h2 class="text-xl font-semibold">{schedule.title}</h2>
-                            <span class={`px-2 py-1 text-xs rounded ${schedule.type === 'EVENT' ? 'bg-blue-100 text-blue-800': 'bg-green-100 text-green-800'}`}>{schedule.type}
-                            </span>
-                        </div>
-                        {#if schedule.description}
-                            <p class="text-gray-600 mt-2">{schedule.description}</p>
+        
+        <div class="mb-6 sticky top-0 z-30 bg-white pb-2">
+            <form onsubmit={handleSearch} class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-indigo-500 group-focus-within:text-indigo-600 transition-colors">
+                        <path fill-rule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813a3.75 3.75 0 002.576-2.576l.813-2.846A.75.75 0 019 4.5zM6 20.25a.75.75 0 01.75.75v.008c0 .414-.336.75-.75.75h-.008a.75.75 0 01-.75-.75V21c0-.414.336-.75.75-.75H6z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                
+                <input 
+                    type="text"
+                    bind:value={searchQuery}
+                    placeholder="AI에게 물어보세요 (예: 오늘 놓친 거 없어?)"
+                    aria-label="일정 검색 및 AI 질문" 
+                    class="block w-full pl-12 pr-12 py-3.5 bg-gray-50 border-0 text-gray-900 rounded-2xl ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 focus:bg-white sm:text-sm sm:leading-6 shadow-sm transition-all"
+                />
+                
+                <button 
+                    type="submit"
+                    disabled={isSearching}
+                    class="absolute inset-y-0 right-0 flex items-center pr-3"
+                    aria-label="검색 전송"
+                >
+                    <div class="p-1.5 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                        {#if isSearching}
+                            <svg class="animate-spin h-5 w-5" aria-label="검색 중" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        {:else}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                            </svg>
                         {/if}
-                        <div class="text-sm text-gray-400 mt-3 flex gap-4">
-                            {#if schedule.start_at}
-                                <span> {new Date(schedule.start_at).toLocaleString()}</span>
-                            {/if}
-                            {#if schedule.deadline}
-                                <span class="text-red-400"> 마감: {new Date(schedule.deadline).toLocaleString()}</span>
-                            {/if}
-                        </div>
                     </div>
-                {/each}
+                </button>
+            </form>
+        </div>
 
+        {#if isSearchMode}
+            <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-2">AI 답변</h3>
+                    <button onclick={closeSearch} class="text-xs text-gray-500 underline py-2 px-2">닫기</button>
+                </div>
+                
+                {#if isSearching}
+                    <div class="text-center py-6 text-sm text-gray-500 animate-pulse">기억을 더듬고 있습니다...</div>
+                {:else if searchResults.length > 0}
+                    <ul class="space-y-3">
+                        {#each searchResults as result}
+                            <li class="bg-gray-50 p-3.5 rounded-xl text-sm text-gray-700 leading-relaxed border border-gray-100">
+                                {result}
+                            </li>
+                        {/each}
+                    </ul>
+                {:else}
+                    <div class="text-center py-6 text-sm text-gray-500">관련된 내용이 없어요.</div>
+                {/if}
+            </div>
+
+        {:else if loading}
+            <div class="text-center p-10 text-gray-400">로딩 중...</div>
+
+        {:else if error}
+            <div class="bg-red-50 text-red-600 p-4 rounded-lg text-sm">{error}</div>
+
+        {:else}
+            <div class="pb-20"> 
+                <CalendarView
+                    schedules={schedules}
+                    onEventClick={openEditModal}
+                />
                 {#if schedules.length === 0}
-                    <div class="text-center text-gray-500 py-10">
-                        등록된 일정이 없습니다.
+                    <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+                        <span class="text-4xl mb-2">📷</span>
+                        <p class="text-sm">하단 카메라 버튼을 눌러<br>일정을 추가해보세요!</p>
                     </div>
                 {/if}
             </div>
         {/if}
-    {/if}
-    
-    <!-- 모달: 조건부 렌더링-->
-    {#if isFormOpen}
-        <ScheduleForm
-            onclose={() => isFormOpen = false}
-            onsuccess={loadSchedules}
-            scheduleToEdit={selectedSchedule}
-        />
-    {/if}
-    
-    <ChatInterface />
-</main>
+
+        {#if isFormOpen}
+            <ScheduleForm
+                onclose={() => isFormOpen = false}
+                onsuccess={loadSchedules}
+                scheduleToEdit={selectedSchedule}
+            />
+        {/if}
+    </div>
+{/if}

@@ -25,6 +25,22 @@
 
     let isSubmitting = $state(false);
 
+    async function handleDelete() {
+        if (!scheduleToEdit || !scheduleToEdit.id) return;
+
+        if (!confirm('정말 이 일정을 삭제하시겠습니까?')) return;
+
+        try {
+            await scheduleApi.delete(scheduleToEdit.id);
+            alert('삭제되었습니다.');
+            onsuccess();
+            onclose();
+        } catch (e) {
+            console.error(e);
+            alert('삭제에 실패했습니다.');
+        }
+    }
+
     async function handleSubmit(e: SubmitEvent) {
         e.preventDefault();
         isSubmitting = true;
@@ -127,6 +143,18 @@
                     />
                 </div>
             {/if}
+
+            <div>
+                {#if scheduleToEdit}
+                    <button 
+                        type="button"
+                        onclick={handleDelete}
+                        class="px-4 py-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
+                    >
+                        삭제
+                    </button>
+                {/if}
+            </div>
 
             <div class="flex justify-end gap-2 mt-6">
                 <button
