@@ -116,7 +116,7 @@
                 <textarea
                     id="description"
                     bind:value={description}
-                    class="mt-1 block w-full border border-gray-300 rounded-md p-2"></textarea>
+                    class="mt-1 block w-full border border-gray-300 rounded-md p-2 whitespace-pre-wrap"></textarea>
             </div>
 
             <!-- 조건부 렌더링: 타입에 따라 다른 입력창 보여주기 -->
