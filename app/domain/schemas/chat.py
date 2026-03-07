@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+from datetime import datetime
+
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, description="사용자의 질문")
@@ -20,3 +22,10 @@ class AIImageResponse(BaseModel):
     location: Optional[str] = Field(None, description="일정이 진행되는 장소 (없으면 null)")
     preparations: Optional[str] = Field(None, description="이 일정을 위해 챙겨야 할 준비물 (예: 신분증, 노트북, 축의금 등). 맥락상 필요해 보이면 AI가 추론할 것.")
     comment: Optional[str] = Field(None, description="바쁜 직장인을 위해 AI 비서의 센스 있는 조언 1~2문장 (예: 거리가 머니 일찍 출발하세요, 비가 오니 우산을 챙기세요 등.)")
+
+
+class SearchIntent(BaseModel):
+    is_shcedule_query: bool = Field(description="일정을 검색하거나 묻는 질문인지 여부")
+    start_date: Optional[datetime] = Field(None, description="검색하려는 기간의 시작일 (예: 오늘, 내일, 다음주 월요일)")
+    end_date: Optional[datetime] = Field(None, description="검색하려는 기간의 종료일(예: 이번주 금요일)")
+    keyword: Optional[str] = Field(None, description="검색어 (예: '회의', '특정 사람 이름'). 없으면 null")

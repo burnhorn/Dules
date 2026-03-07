@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -45,6 +45,35 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
         )
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def search_by_date_and_keyword(self, user_id, start_date = None, end_date = None, keyword = None) -> List[Schedule]:
+    
+        stmt = select(Schedule).where(Schedule.user_id == user_id)
+
+        schedule_start = func.coalesce(Schedule.start_at, Schedule.deadline)
+        schedule_end = func.coalesce(Schedule.end_at, Schedule.deadline, Schedule.start_at)
+
+        if start_date:
+            stmt = stmt.where(schedule_end >= start_date)
+
+        if end_date:
+            stmt = stmt.where(schedule_start <= end_date)
+
+        if keyword:
+            stmt = stmt.where(
+                or_(
+                    Schedule.title.ilike(f"%{keyword}%"),
+                    Schedule.description.ilike(f"%{keyword}%")
+                )
+            )
+        
+        stmt = stmt.order_by(
+            Schedule.start_at.asc().nulls_last(),
+            Schedule.deadline.asc().nulls_last()
+        )
+
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
 
     async def create_history(self, history: ScheduleHistory):
         self.db.add(history)

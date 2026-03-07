@@ -124,9 +124,10 @@ def get_schedule_service(
 
 def get_chat_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
+    schedule_repo: ScheduleRepository = Depends(get_schedule_repository),
     llm: Llm = Depends(get_ai_llm),
 ) -> ChatService:
-    return ChatService(vector_repo, llm)
+    return ChatService(vector_repo, schedule_repo, llm)
 
 
 # =================================================================
