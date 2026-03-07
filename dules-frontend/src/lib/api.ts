@@ -92,10 +92,13 @@ export const scheduleApi = {
 
     // 검색
     search: async (query: string): Promise<string[]> => {
-        const response = await client.get<string[]>('/schedules/search', {
-            params: { query }
+        const response = await client.post<{ answer: string }>('/chat/', {
+            message: query
         });
-        return response.data;
+
+        const answerText = response.data.answer || "답변을 생성하지 못했습니다."
+
+        return answerText.split('\n').filter(line => line.trim() !== '');
     },
 
     // 일정 수정

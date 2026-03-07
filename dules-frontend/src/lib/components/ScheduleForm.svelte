@@ -116,7 +116,9 @@
                 <textarea
                     id="description"
                     bind:value={description}
-                    class="mt-1 block w-full border border-gray-300 rounded-md p-2 whitespace-pre-wrap"></textarea>
+                    rows="6"
+                    class="mt-1 block w-full border border-gray-300 rounded-lg p-3 text-sm shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 whitespace-pre-wrap resize-y transition-colors"
+                    placeholder="일정 상세 내용이나 AI 비서의 분석 결과(장소, 준비물 등)가 여기에 표시됩니다."></textarea>
             </div>
 
             <!-- 조건부 렌더링: 타입에 따라 다른 입력창 보여주기 -->

@@ -149,13 +149,9 @@
                 {#if isSearching}
                     <div class="text-center py-6 text-sm text-gray-500 animate-pulse">기억을 더듬고 있습니다...</div>
                 {:else if searchResults.length > 0}
-                    <ul class="space-y-3">
-                        {#each searchResults as result}
-                            <li class="bg-gray-50 p-3.5 rounded-xl text-sm text-gray-700 leading-relaxed border border-gray-100">
-                                {result}
-                            </li>
-                        {/each}
-                    </ul>
+                    <div class="bg-indigo-50/50 p-4 rounded-xl text-sm text-gray-800 leading-relaxed border border-indigo-100 whitespace-pre-wrap">
+                        {searchResults.join('\n\n')}
+                    </div>
                 {:else}
                     <div class="text-center py-6 text-sm text-gray-500">관련된 내용이 없어요.</div>
                 {/if}
