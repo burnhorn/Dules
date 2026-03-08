@@ -12,7 +12,7 @@ from app.core.logging import setup_logging
 from app.core.middleware import RequestLogMiddleware
 from app.core.config import settings
 
-# json_logs값: 개발계 - False, 운영계 - False
+# json_logs값: 개발계 - False, 운영계 - True
 setup_logging(json_logs=False, log_level="INFO")
 
 def create_app() -> FastAPI:
