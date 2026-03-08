@@ -40,6 +40,7 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
         query = (
             select(Schedule)
             .where(Schedule.user_id == user_id)
+            .order_by(Schedule.created_at.desc())
             .offset(skip)
             .limit(limit)
         )

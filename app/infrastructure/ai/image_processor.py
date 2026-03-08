@@ -20,7 +20,7 @@ class GeminiImageProcessor(ImageProcessor):
             temperature=0,
         )
 
-        print("[Vision] GeminiImageProcessor 초기화 완료")
+        # print("[Vision] GeminiImageProcessor 초기화 완료")
 
     @retry(
         stop=stop_after_attempt(3),
@@ -30,7 +30,7 @@ class GeminiImageProcessor(ImageProcessor):
     async def extract_schedule(
         self, image_bytes: bytes, mime_type: str, reference_date: datetime
     ) -> ScheduleCreate:
-        print("[Vision] 이미지 분석 시작...")
+        # print("[Vision] 이미지 분석 시작...")
 
         image_data = base64.b64encode(image_bytes).decode("utf-8")
         image_url = f"data:{mime_type};base64,{image_data}"
@@ -43,7 +43,6 @@ class GeminiImageProcessor(ImageProcessor):
                     "text": f"""
                         당신은 바쁜 금융권 직장인을 돕는 최고의 AI 비서입니다.
                         사용자는 보안망 때문에 PC에서 일정을 옮기지 못해, 모니터 화면(엑셀/달력), 화이트보드, 수첩 메모를 스마트폰으로 대충 찍어서 업로드합니다.
-                        이 이미지에서 일정 정보를 추출해 주세요.
 
                         현재 한국 기준 시각:
                         {current_time_str} (KST)
@@ -59,7 +58,10 @@ class GeminiImageProcessor(ImageProcessor):
                         이미지에서 일정 정보를 추출하세요.
                 
                     [분석 규칙]
-                    1. title: 일정의 핵심 제목.
+                    1. title: 반드시 시간, 장소, 부사('꼭', '반드시' 등), 형용사 등 불필요한 수식어를 모두 제거하고, **최대 3단어 이내의 '핵심 명사 및 행동'**으로만 압축하여 작성하세요.
+                       - (예시 1) "데이터 정리 꼭 저녁에 하기" => "데이터 정리"
+                       - (예시 2) "내일 오전 A팀 주간 회의" => "A팀 주간 회의"
+                       - (예시 3) "다이소 가서 건전지 4개 사기" => "건전지 구매"
                     2. type: 
                     - 시간이 명확하게(시작/종료) 적혀 있으면 'EVENT'
                     - 날짜만 있거나 마감일만 있거나 시간이 없으면 'TASK'
@@ -69,7 +71,7 @@ class GeminiImageProcessor(ImageProcessor):
                     [특별 임무]
                     4. location: 장소가 보이면 추출하세요.
                     5. preparations: 일정 성격을 파악해 필요한 준비물을 센스 있게 유추하세요. (예: 미팅 -> 명함/노트북)
-                    6. ai_comment: 직장인을 위한 실용적인 조언을 1~2문장으로 작성하세요.
+                    6. ai_comment: 직장인을 위한 실용적인 조언을 1~2문장으로 작성하세요. 제거된 수식어(시간, 장소 등)의 뉘앙스는 이 조언에 자연스럽게 녹여내도 좋습니다.
                 """,
                 },
                 {
@@ -83,7 +85,7 @@ class GeminiImageProcessor(ImageProcessor):
         
         try:
             result = await structured_llm.ainvoke([message])
-            print(f"[Vision] 추출 성공: 총 {len(result.schedules)}개의 일정 발견")
+            # print(f"[Vision] 추출 성공: 총 {len(result.schedules)}개의 일정 발견")
 
             description_parts = []
             final_schedules = []

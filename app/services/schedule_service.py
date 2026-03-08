@@ -1,5 +1,6 @@
 import json
 import structlog
+import difflib
 from datetime import datetime
 from typing import List
 from uuid import UUID
@@ -71,11 +72,29 @@ class ScheduleService:
             image_bytes, mime_type, now_kst
         )
 
-        created_schedules = []
-        for schedule_data in schedule_data_list:
-            created = await self.create_schedule(schedule_data, user_id, background_tasks)
-            created_schedules.append(created)
+        existing_schedules = await self.repo.get_all_by_user(user_id, limit=50)
+        skipped_count = 0
 
+        created_schedules = []
+
+        for new_schedule in schedule_data_list:
+            is_duplicate = False
+
+            for existing in existing_schedules:
+                similarity = self._calculate_similarity(new_schedule.title, existing.title)
+
+                if similarity >= 0.7:
+                    # print(f"[Deduplication] 중복 스킵: '{new_schedule.title}' (유사도: {similarity*100:.1f}% -> 매칭: '{existing.title}')")
+                    is_duplicate = True
+                    break
+            if is_duplicate:
+                skipped_count += 1
+                continue
+
+            created = await self.create_schedule(new_schedule, user_id, background_tasks)
+            created_schedules.append(created)
+            
+        # print(f"[ETL] 파이프라인 완료: 총 {len(schedule_data_list)}개 추출 -> {len(created_schedules)}개 저장 / {skipped_count}개 중복 스킵")
         return created_schedules
 
     async def delete_schedule(self, schedule_id: UUID, user_id: UUID) -> None:
@@ -124,7 +143,7 @@ class ScheduleService:
         """
         cache_key = f"schedules:user:{user_id}"
         await self.cache_repo.delete(cache_key)
-        print(f"[Cache] 캐시 삭제 완료: {cache_key}")
+        # print(f"[Cache] 캐시 삭제 완료: {cache_key}")
 
     async def update_schedule(
         self,
@@ -191,3 +210,15 @@ class ScheduleService:
             return ["관련된 과거 일정을 찾을 수 없습니다."]
 
         return results
+    
+    def _calculate_similarity(self, a: str, b: str) -> float:
+        """
+        두 문자열의 형태적 유사도를 0.0 ~ 1.0 사이로 반환 (공백 무시)
+        예: '회의 일정 기록' vs '정기회의 기록' -> 1.0 (100%)
+        """
+        if not a or not b:
+            return 0.0
+        
+        str_a = a.replace(" ", "").lower()
+        str_b = b.replace(" ", "").lower()
+        return difflib.SequenceMatcher(None, str_a, str_b).ratio()
