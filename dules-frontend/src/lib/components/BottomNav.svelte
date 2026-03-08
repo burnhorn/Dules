@@ -56,8 +56,7 @@
                 <input 
                     bind:this={fileInput}
                     type="file" 
-                    accept="image/*" 
-                    capture="environment" 
+                    accept="image/*"
                     onchange={handleFileSelect}
                     disabled={isUploading}
                     class="hidden" 
