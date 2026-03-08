@@ -39,7 +39,7 @@ class ScheduleService:
         self.cache_repo = cache_repo
 
     async def create_schedule(
-        self, data: ScheduleCreate, user_id: UUID, background_taks: BackgroundTasks
+        self, data: ScheduleCreate, user_id: UUID, background_tasks: BackgroundTasks
     ) -> ScheduleResponse:
 
         await self._invalidate_cache(user_id)
@@ -59,6 +59,24 @@ class ScheduleService:
         )
 
         return ScheduleResponse.model_validate(created_schedule)
+
+    async def create_schedule_from_image(
+        self, image_bytes: bytes, mime_type: str, user_id: UUID, background_tasks: BackgroundTasks,
+    ) -> List[ScheduleResponse]:
+        
+        kst = pytz.timezone("Asia/Seoul")
+        now_kst = datetime.now(kst)
+
+        schedule_data_list = await self.image_processor.extract_schedule(
+            image_bytes, mime_type, now_kst
+        )
+
+        created_schedules = []
+        for schedule_data in schedule_data_list:
+            created = await self.create_schedule(schedule_data, user_id, background_tasks)
+            created_schedules.append(created)
+
+        return created_schedules
 
     async def delete_schedule(self, schedule_id: UUID, user_id: UUID) -> None:
         await self._invalidate_cache(user_id)
@@ -173,21 +191,3 @@ class ScheduleService:
             return ["관련된 과거 일정을 찾을 수 없습니다."]
 
         return results
-
-    async def create_schedule_from_image(
-        self,
-        image_bytes: bytes,
-        mime_type: str,
-        user_id: UUID,
-        background_tasks: BackgroundTasks,
-    ) -> ScheduleResponse:
-
-        kst = pytz.timezone("Asia/Seoul")
-        now_kst = datetime.now(kst)
-
-        schedule_data = await self.image_processor.extract_schedule(
-            image_bytes, mime_type, now_kst
-        )
-
-        # DRY 원칙: 기존의 메서드 활용하여 DB 저장
-        return await self.create_schedule(schedule_data, user_id, background_tasks)

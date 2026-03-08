@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, Protocol
 from uuid import UUID
 
+
+
 # 런타임 시 미실행, IDE 시 실행
 if TYPE_CHECKING:
     from app.domain.schemas.schedule import ScheduleCreate
@@ -12,6 +14,7 @@ if TYPE_CHECKING:
 class ScheduleRepository(Protocol):
     """
     일정 관리를 위한 저장소 인터페이스
+    데이터베이스 기술에 도메인 로직이 결합되는 것을 방지하고 테스트 용이성을 높이기 위해 추상화함
     """
 
     async def create(self, schedule: "ScheduleCreate", user_id: UUID) -> "Schedule": ...
@@ -20,6 +23,9 @@ class ScheduleRepository(Protocol):
 
     async def get_all_by_user(
         self, user_id: UUID, skip: int = 0, limit: int = 100
+    ) -> List["Schedule"]: ...
+
+    async def search_by_date_and_keyword(self, user_id: UUID, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None, keyword: Optional[str] = None
     ) -> List["Schedule"]: ...
 
     async def update(self, schedule: "Schedule") -> "Schedule": ...
@@ -34,6 +40,7 @@ class ScheduleRepository(Protocol):
 class VectorRepository(Protocol):
     """
     텍스트 데이터를 벡터화하여 저장하고 검색하는 인터페이스
+    데이터베이스 기술에 도메인 로직이 결합되는 것을 방지하고 테스트 용이성을 높이기 위해 추상화함
     """
 
     async def save(self, text: str, user_id: UUID, metadata: dict = None) -> None:
@@ -52,6 +59,7 @@ class VectorRepository(Protocol):
 class Llm(Protocol):
     """
     LLM과 통신을 담당하는 인터페이스
+    LLM 기술에 도메인 로직이 결합되는 것을 방지하고 테스트 용이성을 높이기 위해 추상화함
     """
 
     async def ask(self, question: str, context: str) -> str:
@@ -64,16 +72,18 @@ class Llm(Protocol):
 class ImageProcessor(Protocol):
     """
     이미지 파일을 분석하여 일정 정보를 추출하는 인터페이스
+    OCR 기술에 도메인 로직이 결합되는 것을 방지하고 테스트 용이성을 높이기 위해 추상화함
     """
 
     async def extract_schedule(
         self, image_bytes: bytes, mime_type: str, reference_date: datetime
-    ) -> "ScheduleCreate": ...
+    ) -> List["ScheduleCreate"]: ...
 
 
 class UserRepository(Protocol):
     """
     유저 정보를 관리하는 저장소 인터페이스
+    데이터베이스 기술에 도메인 로직이 결합되는 것을 방지하고 테스트 용이성을 높이기 위해 추상화함
     """
 
     async def get_by_email(self, email: str, load_schedules: bool = False) -> Optional["User"]: ...
@@ -90,7 +100,7 @@ class UserRepository(Protocol):
 class TokenRepository(Protocol):
     """
     인증 토큰(JWT)의 상태를 관리하는 저장소
-    (Redis 구현체 교체용)
+    Redis 기술에 도메인 로직이 결합되는 것을 방지하고 테스트 용이성을 높이기 위해 추상화함
     """
 
     async def add_to_blacklist(self, token: str, expires_in: int) -> None:
@@ -135,6 +145,7 @@ class TokenRepository(Protocol):
 class CacheRepository(Protocol):
     """
     데이터 캐싱을 담당하는 인터페이스
+    Redis 기술에 도메인 로직이 결합되는 것을 방지하고 테스트 용이성을 높이기 위해 추상화함
     """
 
     async def get(self, key: str) -> Optional[str]:

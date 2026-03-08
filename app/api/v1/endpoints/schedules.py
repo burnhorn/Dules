@@ -80,7 +80,7 @@ async def search_schedules(
 
 
 @router.post(
-    "/image", response_model=ScheduleResponse, summary="이미지로 일정 등록 (OCR)"
+    "/image", response_model=List[ScheduleResponse], summary="이미지로 일정 등록 (OCR)"
 )
 async def create_schedule_by_image(
     background_tasks: BackgroundTasks,
@@ -89,7 +89,7 @@ async def create_schedule_by_image(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """
-    이미지 파일(청첩장, 시간표 등)을 업로드하면 내용을 분석하여 일정을 자동 등록
+    이미지 파일(청첩장, 시간표 등)을 업로드하면 내용을 분석하여 다중 일정을 자동 등록
     """
     contents = await file.read()
 

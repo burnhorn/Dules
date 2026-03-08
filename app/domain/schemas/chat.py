@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 
 
@@ -22,6 +22,10 @@ class AIImageResponse(BaseModel):
     location: Optional[str] = Field(None, description="일정이 진행되는 장소 (없으면 null)")
     preparations: Optional[str] = Field(None, description="이 일정을 위해 챙겨야 할 준비물 (예: 신분증, 노트북, 축의금 등). 맥락상 필요해 보이면 AI가 추론할 것.")
     comment: Optional[str] = Field(None, description="바쁜 직장인을 위해 AI 비서의 센스 있는 조언 1~2문장 (예: 거리가 머니 일찍 출발하세요, 비가 오니 우산을 챙기세요 등.)")
+
+
+class AIImageResponseList(BaseModel):
+    schedules: List[AIImageResponse] = Field(description="이미지에서 추출된 하나 이상의 일정 목록")
 
 
 class SearchIntent(BaseModel):

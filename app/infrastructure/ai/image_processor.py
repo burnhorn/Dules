@@ -7,7 +7,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.domain.interfaces import ImageProcessor
-from app.domain.schemas.chat import AIImageResponse
+from app.domain.schemas.chat import AIImageResponseList
 from app.domain.schemas.schedule import ScheduleCreate
 
 
@@ -79,35 +79,40 @@ class GeminiImageProcessor(ImageProcessor):
             ]
         )
 
-        structured_llm = self.llm.with_structured_output(AIImageResponse)
-
+        structured_llm = self.llm.with_structured_output(AIImageResponseList)
+        
         try:
             result = await structured_llm.ainvoke([message])
-            print(f"[Vision] 추출 성공: {result.title}")
+            print(f"[Vision] 추출 성공: 총 {len(result.schedules)}개의 일정 발견")
 
             description_parts = []
-
-            if result.description:
-                description_parts.append(result.description)
-            if result.location:
-                description_parts.append(f"장소: {result.location}")
-            if result.preparations:
-                description_parts.append(f"준비물: {result.preparations}")
-            if result.comment:
-                description_parts.append(f"비서 조언: {result.comment}")
+            final_schedules = []
             
-            final_description = "\n\n".join(description_parts)
+            for item in result.schedules:
+                description_parts = []
 
-            final_schedule = ScheduleCreate(
-                title=result.title,
-                type=result.type,
-                start_at=result.start_at,
-                end_at=result.end_at,
-                deadline=result.deadline,
-                description=final_description
-            )
+                if item.description:
+                    description_parts.append(item.description)
+                if item.location:
+                    description_parts.append(f"장소: {item.location}")
+                if item.preparations:
+                    description_parts.append(f"준비물: {item.preparations}")
+                if item.comment:
+                    description_parts.append(f"비서 조언: {item.comment}")
+            
+                final_description = "\n\n".join(description_parts)
 
-            return final_schedule
+                final_schedule = ScheduleCreate(
+                    title=item.title,
+                    type=item.type,
+                    start_at=item.start_at,
+                    end_at=item.end_at,
+                    deadline=item.deadline,
+                    description=final_description
+                )
+                final_schedules.append(final_schedule)
+
+            return final_schedules
 
         except Exception as e:
             raise ValueError(f"이미지 분석 중 오류 발생: {e}")
