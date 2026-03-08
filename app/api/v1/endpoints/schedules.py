@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Query, UploadFile, status
 
 from app.api.dependencies import get_current_user_id, get_schedule_service
 from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
@@ -39,13 +39,24 @@ async def delete_schedule(
 
 @router.get("/", response_model=List[ScheduleResponse], summary="내 일정 목록 조회")
 async def read_schedules(
+    skip: int = 0,
+    limit: int = 100,
+    type: Optional[str] = Query(None, description="특정 일정 타입만 조회 (예: MEMO)"),
+    exclude_type: Optional[str] = Query(None, description="특정 일정 타입 제외 (예: MEMO)"),
     service: ScheduleService = Depends(get_schedule_service),
     user_id: UUID = Depends(get_current_user_id),
 ):
     """
     현재 사용자의 모든 일정을 조회
+    - 달력 뷰: ?exclude_type=MEMO
+    - 보관함 뷰: ?type=MEMO
     """
-    return await service.get_schedules(user_id)
+    return await service.get_schedules(
+        user_id=user_id,
+        skip=skip,
+        limit=limit,
+        schedule_type=type,
+        exclude_type=exclude_type)
 
 
 @router.patch("/{schedule_id}", response_model=ScheduleResponse, summary="일정 수정")

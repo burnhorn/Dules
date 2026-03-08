@@ -2,7 +2,7 @@ import json
 import structlog
 import difflib
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 import pytz
@@ -114,8 +114,16 @@ class ScheduleService:
         await self.repo.delete(schedule)
         await self.repo.commit()
 
-    async def get_schedules(self, user_id: UUID) -> List[ScheduleResponse]:
-        cache_key = f"schedules:user:{user_id}"
+    async def get_schedules(
+            self,
+            user_id: UUID,
+            skip: int = 0,
+            limit: int = 100,
+            schedule_type: Optional[str] = None,
+            exclude_type: Optional[str] = None
+            ) -> List[ScheduleResponse]:
+        
+        cache_key = f"schedules:user:{user_id}:type:{schedule_type}:ex:{exclude_type}:skip:{skip}:limit:{limit}"
 
         log = logger.bind(user_id=str(user_id))
 
@@ -128,7 +136,13 @@ class ScheduleService:
 
         # Cache Miss Case
         log.info("cache_miss", source="db")
-        schedules = await self.repo.get_all_by_user(user_id)
+        schedules = await self.repo.get_all_by_user(
+            user_id,
+            skip=skip,
+            limit=limit,
+            schedule_type=schedule_type,
+            exclude_type=exclude_type
+            )
         response = [ScheduleResponse.model_validate(s) for s in schedules]
 
         # Serialization
@@ -139,11 +153,12 @@ class ScheduleService:
 
     async def _invalidate_cache(self, user_id: UUID):
         """
-        Cache Invalidation (Create, Update 시 활용)
+        Cache Invalidation (Create, Update, Delete 시 활용)
+        유저와 관련된 모든 조건부 캐시(type, skip 등)을 일괄 삭제
         """
-        cache_key = f"schedules:user:{user_id}"
-        await self.cache_repo.delete(cache_key)
-        # print(f"[Cache] 캐시 삭제 완료: {cache_key}")
+        pattern = f"schedules:user:{user_id}*"
+        await self.cache_repo.delete_pattern(pattern)
+        logger.info("[Cache] 유저 관련 모든 일정 캐시 무효화 완료", user_id=str(user_id))
 
     async def update_schedule(
         self,

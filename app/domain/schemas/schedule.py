@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 class ScheduleType(str, Enum):
     EVENT = "EVENT"  # 시간 확정 일정 (회의, 약속)
     TASK = "TASK"  # 마감 기반 할 일 (보고서 작성, 공부)
+    MEMO = "MEMO" # 단순 기록, 회의록, 정보성 메모
 
 
 # 공통 속성 정의

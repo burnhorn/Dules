@@ -35,11 +35,22 @@ class SQLAlchemyScheduleRepository(ScheduleRepository):
         return result.scalars().first()
 
     async def get_all_by_user(
-        self, user_id: UUID, skip: int = 0, limit: int = 100
+        self, user_id: UUID, skip: int = 0, limit: int = 100,
+        schedule_type: Optional[str] = None,
+        exclude_type: Optional[str] = None
     ) -> List[Schedule]:
         query = (
             select(Schedule)
             .where(Schedule.user_id == user_id)
+        )
+
+        if schedule_type:
+            query = query.where(Schedule.type == schedule_type)
+        if exclude_type:
+            query = query.where(Schedule.type != exclude_type)
+
+        query = (
+            query
             .order_by(Schedule.created_at.desc())
             .offset(skip)
             .limit(limit)
