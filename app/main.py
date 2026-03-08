@@ -87,7 +87,7 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
         # 운영계에서는 Sentry 알림 변경
-        print(f"[CRITICAL] Unhandled Exception: {exc}")
+        # print(f"[CRITICAL] Unhandled Exception: {exc}")
         return JSONResponse(
             status_code=500,
             content={

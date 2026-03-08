@@ -91,7 +91,8 @@ class AuthService:
                 await self.token_repo.add_to_blacklist(access_token, ttl)
 
         except Exception as e:
-            print(f"Logout warning: {e}")
+            # print(f"Logout warning: {e}")
+            raise e
 
         if refresh_token:
             await self.token_repo.delete_refresh_token(refresh_token)

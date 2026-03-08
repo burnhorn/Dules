@@ -60,7 +60,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 # =================================================================
 @lru_cache
 def get_vector_repository() -> VectorRepository:
-    print("Initializing PGVector Repository (Singleton)")
+    # print("Initializing PGVector Repository (Singleton)")
     return PGVectorRepository()
 
 

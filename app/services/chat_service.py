@@ -71,7 +71,7 @@ class ChatService:
         if exact_schedules:
             schedule_title = ", ".join([s.title for s in exact_schedules])
             vector_query += f"\n[관련 키워드: {schedule_title}]"
-            print(f"[RAG] 확장된 Vector 검색어: {vector_query}")
+            # print(f"[RAG] 확장된 Vector 검색어: {vector_query}")
             
         relevant_docs = await self.vector_repo.search(
             query=vector_query, user_id=user_id, limit=3

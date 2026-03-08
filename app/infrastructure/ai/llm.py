@@ -30,7 +30,7 @@ class GeminiLlm(Llm):
         """
         실제 Gemini API 호출용
         """
-        print("[AI] GeminiLlm 초기화 중...")
+        # print("[AI] GeminiLlm 초기화 중...")
 
         self.llm = ChatGoogleGenerativeAI(
             model="gemini-3-flash-preview",
@@ -55,7 +55,7 @@ class GeminiLlm(Llm):
         )
 
         self.chain = self.prompt | self.llm | StrOutputParser()
-        print("[AI] GeminiLlm 준비 완료!")
+        # print("[AI] GeminiLlm 준비 완료!")
 
     @retry(
         stop=stop_after_attempt(3),
@@ -68,12 +68,12 @@ class GeminiLlm(Llm):
                 {"question": question, "context": context}
             )
             if response is None:
-                print("[AI] 답변이 None입니다.")
+                # print("[AI] 답변이 None입니다.")
                 return "죄송합니다. 답변을 생성하는 데 문제가 발생했습니다."
 
-            print(f"[AI] 답변 완료: {response[:20]}...")
+            # print(f"[AI] 답변 완료: {response[:20]}...")
             return response
 
         except Exception as e:
-            print(f"[AI] 에러 발생: {e}")
+            # print(f"[AI] 에러 발생: {e}")
             return "죄송합니다. 에러가 발생하여 답변할 수 없습니다."
