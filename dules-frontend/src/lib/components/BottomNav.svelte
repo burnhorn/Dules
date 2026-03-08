@@ -22,11 +22,11 @@
             const results: Schedule[] = await scheduleApi.uploadImage(file);
             
             if (results && results.length > 0) {
-                const scheduleListText = results.map((s, index) => `${index + 1}. ${s.title}`).join('\n');
+                const scheduleListText = results.map((s: any, index: number) => `${index + 1}. ${s.title}`).join('\n');
 
-                alert(`[분석 완료]\n총 ${results.length}개의 일정이 등록되었습니다. \n\n${scheduleListText}`);
+                alert(`[분석 완료]\n총 ${results.length}개의 일정이 등록되었습니다.\n(중복된 일정은 자동으로 제외되었습니다.\n\n${scheduleListText}`);
             } else {
-                alert("이미지에서 일정을 찾지 못했습니다.");
+                alert(`[AI 비서 동기화 완료]\n이미지에서 일정을 확인했으나, 모두 이미 캘린더에 등록된 일정이라 건너뛰었습니다.`);
             }
 
             await scheduleStore.load();
