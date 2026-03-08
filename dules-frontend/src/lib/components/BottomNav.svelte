@@ -19,16 +19,19 @@
         isUploading = true;
 
         try {
-            const result: Schedule = await scheduleApi.uploadImage(file);
-            const time = result.start_at || result.deadline
+            const results: Schedule[] = await scheduleApi.uploadImage(file);
+            
+            if (results && results.length > 0) {
+                const scheduleListText = results.map((s, index) => `${index + 1}. ${s.title}`).join('\n');
 
-            const timeText = time? new Date(time).toLocaleDateString() : "시간 정보 없음";
-
-            alert(`[분석 완료]\n일정: ${result.title}\n일시: ${timeText}`);
+                alert(`[분석 완료]\n총 ${results.length}개의 일정이 등록되었습니다. \n\n${scheduleListText}`);
+            } else {
+                alert("이미지에서 일정을 찾지 못했습니다.");
+            }
 
             await scheduleStore.load();
         } catch (e) {
-            alert("이미지 분석에 실패했습니다. 다시 시도해주세요.")
+            alert("이미지 분석에 실패했습니다. 시간 초과일 수 있으니 새로고침 해보세요")
             console.error(e)
         } finally {
             isUploading = false;

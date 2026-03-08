@@ -18,14 +18,21 @@
         isUploading = true;
         try {
             const result = await scheduleApi.uploadImage(file);
-            alert(`일정이 등록되었습니다: ${result.title}`);
-            
+
+            if (results && results.length > 0) {
+                const scheduleListText = results
+                    .map((s: any, index: number) => `${index + 1}. ${s.title}`)
+                    .join('\n');
+                alert(`[AI 비서 분석 완료] \n총 ${results.length}개의 일정이 등록되었습니다.\n\n${scheduleListText}`);
+            } else {
+                alert("이미지에서 일정을 찾지 못했습니다.");
+            }
             onuploaded?.();
 
             if (fileInput) fileInput.value = '';
-        } catch (e) {
-            alert(`이미지 분석에 실패했습니다.`);
-            console.error(e);
+        } catch (e: any) {
+            console.error("Upload Error:", e); 
+            alert(`이미지 분석 중 오류가 발생했습니다. (시간 초과일 수 있으니 새로고침 해보세요)`);
         } finally {
             isUploading = false;
         }

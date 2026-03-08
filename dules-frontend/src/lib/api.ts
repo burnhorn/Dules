@@ -8,6 +8,7 @@ import { PUBLIC_API_URL } from '$env/static/public';
 // 설정 중앙 관리용
 const client = axios.create({
     baseURL: `${PUBLIC_API_URL}/api/v1`,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json'
     },
@@ -75,11 +76,11 @@ export const scheduleApi = {
     },
 
     // 이미지로 일정 생성
-    uploadImage: async (file: File): Promise<Schedule> => {
+    uploadImage: async (file: File): Promise<Schedule[]> => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await client.post<Schedule>('/schedules/image', formData, {
+        const response = await client.post<Schedule[]>('/schedules/image', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
