@@ -64,8 +64,12 @@ client.interceptors.response.use(
 
 export const scheduleApi = {
     // 일정 목록 조회
-    getAll: async (): Promise<Schedule[]> => {
-        const response = await client.get<Schedule[]>('/schedules/');
+    getAll: async (params?: { type?: string; exclude_type?: string }): Promise<Schedule[]> => {
+        const queryString = params
+            ? '?' + new URLSearchParams(params as Record<string, string>).toString()
+            : '';
+
+        const response = await client.get<Schedule[]>(`/schedules/${queryString}`);
         return response.data;
     },
 
