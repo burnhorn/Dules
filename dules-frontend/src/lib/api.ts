@@ -61,9 +61,6 @@ client.interceptors.response.use(
     }
 );
 
-// [임시] 개발용 Mock 유저 ID
-const TEST_USER_ID = "00000000-0000-0000-0000-000000000001";
-
 export const scheduleApi = {
     // 일정 목록 조회
     getAll: async (): Promise<Schedule[]> => {
@@ -90,17 +87,6 @@ export const scheduleApi = {
         return response.data;
     },
 
-    // 검색
-    search: async (query: string): Promise<string[]> => {
-        const response = await client.post<{ answer: string }>('/chat/', {
-            message: query
-        });
-
-        const answerText = response.data.answer || "답변을 생성하지 못했습니다."
-
-        return answerText.split('\n').filter(line => line.trim() !== '');
-    },
-
     // 일정 수정
     update: async (id: string, data: Partial<ScheduleCreate>) : Promise<Schedule> => {
         const response = await client.patch<Schedule>(`/schedules/${id}`, data);
@@ -114,10 +100,22 @@ export const scheduleApi = {
 }
 
 export const chatApi = {
-    sendMessage: async (message: string): Promise<ChatResponse> => {
-        const response = await client.post<ChatResponse>('/chat/', { message });
-        return response.data;
-    }
+    // 검색
+    search: async (query: string): Promise<string[]> => {
+        const response = await client.post<{ answer: string }>('/chat/', {
+            message: query
+        });
+
+        const answerText = response.data.answer || "답변을 생성하지 못했습니다."
+
+        return answerText.split('\n').filter(line => line.trim() !== '');
+    },
+
+    // // AI와 챗(업데이트 예정)
+    // sendMessage: async (message: string): Promise<ChatResponse> => {
+    //     const response = await client.post<ChatResponse>('/chat/sendMessage', { message });
+    //     return response.data;
+    // }
 }
 
 export const authApi = {

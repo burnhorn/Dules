@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { scheduleApi, authApi } from "$lib/api";
+    import { scheduleApi, authApi, chatApi } from "$lib/api";
     import type { Schedule } from "$lib/types";
 
     import { auth, logout } from "$lib/stores/auth";
@@ -56,7 +56,7 @@
         isSearchMode = true
 
         try {
-            searchResults = await scheduleApi.search(searchQuery);
+            searchResults = await chatApi.search(searchQuery);
         } catch (e) {
             console.error(e);
             alert('검색 중 오류가 발생했습니다.')
