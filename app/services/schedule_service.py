@@ -140,7 +140,7 @@ class ScheduleService:
             user_id,
             skip=skip,
             limit=limit,
-            schedule_type=ScheduleType[schedule_type],
+            schedule_type=ScheduleType[schedule_type] if schedule_type else None,
             exclude_type=exclude_type
             )
         response = [ScheduleResponse.model_validate(s) for s in schedules]
