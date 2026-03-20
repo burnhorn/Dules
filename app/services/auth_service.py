@@ -22,7 +22,7 @@ class AuthService:
         user = await self.user_repo.get_by_email(email)
 
         if not user or not verify_password(password, user.hashed_password):
-            raise CredentialsException
+            raise CredentialsException()
 
         return user
 

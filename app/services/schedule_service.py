@@ -15,7 +15,7 @@ from app.domain.interfaces import (
     ScheduleRepository,
     VectorRepository,
 )
-from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
+from app.domain.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleType, ScheduleUpdate
 from app.infrastructure.db.models.schedule import ScheduleHistory
 from app.worker import task_save_vector
 
@@ -140,7 +140,7 @@ class ScheduleService:
             user_id,
             skip=skip,
             limit=limit,
-            schedule_type=schedule_type,
+            schedule_type=ScheduleType[schedule_type],
             exclude_type=exclude_type
             )
         response = [ScheduleResponse.model_validate(s) for s in schedules]
