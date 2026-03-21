@@ -7,6 +7,7 @@ from uuid import UUID
 from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_postgres import PGVector
+from sqlalchemy import create_engine
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
@@ -34,11 +35,17 @@ class PGVectorRepository(VectorRepository):
         sanitized_model_name = self.CURRENT_MODEL.replace("/", "_").replace("-", "_")
         self.collection_name = f"dules_schedules_{sanitized_model_name}"
 
+        self.engine = create_engine(
+            self.connection_string,
+            pool_pre_ping=True,
+            pool_recycle=1800,
+        )
+
         # PGVector를 동기 모드로 초기화
         self.vector_store = PGVector(
             embeddings=self.embeddings,
             collection_name=self.collection_name,
-            connection=self.connection_string,
+            connection=self.engine,
             use_jsonb=True,
             create_extension=False,
         )
