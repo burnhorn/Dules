@@ -27,7 +27,6 @@
 
     async function handleDelete() {
         if (!scheduleToEdit || !scheduleToEdit.id) return;
-
         if (!confirm('정말 이 일정을 삭제하시겠습니까?')) return;
 
         try {
@@ -45,7 +44,7 @@
         e.preventDefault();
         isSubmitting = true;
 
-        try {
+        try { // Memo일 때는 모두 undefined 처리
             const payload: ScheduleCreate = {
                 title,
                 description: description || undefined,
@@ -108,6 +107,7 @@
                 <select id="type" bind:value={type} class="mt-1 block w-full border border-gray-300 rounded-md p-2">
                     <option value="TASK">할 일 (Task)</option>
                     <option value="EVENT">이벤트 (Event)</option>
+                    <option value="MEMO">메모 (Memo)</option>
                 </select>
             </div>
             
@@ -118,7 +118,7 @@
                     bind:value={description}
                     rows="6"
                     class="mt-1 block w-full border border-gray-300 rounded-lg p-3 text-sm shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 whitespace-pre-wrap resize-y transition-colors"
-                    placeholder="일정 상세 내용이나 AI 비서의 분석 결과(장소, 준비물 등)가 여기에 표시됩니다."></textarea>
+                    placeholder="일정 상세 내용, 메모, AI 비서의 분석 결과(장소, 준비물 등)가 여기에 표시됩니다."></textarea>
             </div>
 
             <!-- 조건부 렌더링: 타입에 따라 다른 입력창 보여주기 -->
@@ -145,7 +145,7 @@
                         />
                     </div>
                 </div>
-            {:else}
+            {:else if type === 'TASK'}
                 <div>
                     <label for="deadline" class="block text-sm font-medium text-gray-700">마감일</label>
                     <input 

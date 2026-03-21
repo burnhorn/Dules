@@ -1,4 +1,4 @@
-export type ScheduleType = 'EVENT' | 'TASK';
+export type ScheduleType = 'EVENT' | 'TASK' | 'MEMO';
 
 export interface Schedule {
     id: string; // UUID
