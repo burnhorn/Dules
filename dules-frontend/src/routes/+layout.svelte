@@ -16,7 +16,7 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 mx-auth max-w-md shadow-2xl relative">
+<div class="min-h-screen bg-gray-50 mx-auto max-w-md shadow-2xl relative">
 	<main class="pb-24 min-h-screen bg-white">
 		{@render children()}
 	</main>
