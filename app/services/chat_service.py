@@ -1,3 +1,4 @@
+import pytz
 from datetime import datetime
 from uuid import UUID
 
@@ -26,7 +27,8 @@ class ChatService:
         """
         Hybrid Retrieval (SQL + Vector 동시에 검색)
         """
-        current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        kst = pytz.timezone("Asia/Seoul")
+        current_time_str = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         
         extractor = self.intent_llm.with_structured_output(SearchIntent)
         intent_prompt = f"""
