@@ -105,7 +105,7 @@ sentry_sdk.init(
     dsn=settings.SENTRY_SDK_DSN,
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
-    send_default_pii=True,
+    send_default_pii=False,
 )
 
 app = create_app()
