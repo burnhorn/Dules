@@ -8,6 +8,8 @@
 >
 > 백엔드 엔지니어로서 **유지보수하기 좋은 아키텍처**와 **외부 API(AI) 연동 시 발생하는 성능 병목 해결**에 집중하여 개발했습니다.
 
+
+![Image](https://github.com/user-attachments/assets/452910f0-eb7a-456c-a893-aed5ab116f03)
 ---
 
 ## 기술 스택
