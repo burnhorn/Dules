@@ -12,7 +12,9 @@ sentry_sdk.init(
 )
 
 celery_app = Celery(
-    "dules_worker", broker=settings.REDIS_URL, backend=settings.REDIS_URL
+    "dules_worker",
+    broker=settings.CELERY_BROKER_URL,
+    backend=settings.CELERY_BROKER_URL,
 )
 
 celery_app.conf.update(

@@ -10,7 +10,7 @@ from app.domain.interfaces import TokenRepository
 class RedisTokenRepository(TokenRepository):
     def __init__(self):
         self.redis = redis.from_url(
-            settings.REDIS_URL, encoding="utf-8", decode_responses=True
+            settings.REDIS_CACHE_URL, encoding="utf-8", decode_responses=True
         )
 
     async def add_to_blacklist(self, token: str, expires_in: int) -> None:

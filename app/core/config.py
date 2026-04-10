@@ -3,7 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    REDIS_URL: str
+    CELERY_BROKER_URL: str
+    REDIS_CACHE_URL: str
     GOOGLE_API_KEY: str
     GOOGLE_EMBEDDINGS_MODEL: str
     SENTRY_SDK_DSN: str

@@ -13,7 +13,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 350M
         reservations:
           memory: 200M
 
@@ -29,9 +29,22 @@ services:
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 350M
         reservations:
           memory: 200M
+
+  redis-broker:
+    image: redis:7-alpine
+    container_name: dules-redis-broker
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+        reservations:
+          memory: 50M
+
   tunnel:
     image: cloudflare/cloudflared:latest
     container_name: dules-tunnel-1

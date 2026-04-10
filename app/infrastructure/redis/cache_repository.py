@@ -9,7 +9,7 @@ from app.domain.interfaces import CacheRepository
 class RedisCacheRepository(CacheRepository):
     def __init__(self):
         self.redis = redis.from_url(
-            settings.REDIS_URL, encoding="utf-8", decode_responses=True
+            settings.REDIS_CACHE_URL, encoding="utf-8", decode_responses=True
         )
 
     async def get(self, key: str) -> Optional[str]:
